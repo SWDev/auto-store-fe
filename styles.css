@@ -1,0 +1,63 @@
+body,
+html {
+  margin: 0;
+  padding: 0;
+}
+
+.header {
+  background-color: #ff5101;
+  width: 100%;
+}
+
+.header img {
+  width: 200px;
+  height: auto;
+  margin: 0 auto;
+  display: block;
+}
+
+.input-container {
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.input-container input {
+  margin: 9px 0 0;
+  height: 32px;
+  border-radius: 6px;
+  border: solid 2px #dedede;
+  padding: 0 10px;
+}
+
+.input-container div {
+  margin-right: 10px;
+}
+
+.input-container button {
+  background-color: #ff5101;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 5px;
+  display: block;
+  margin: 0 auto;
+}
+
+.price-breakdown {
+  padding: 10px;
+  font-size: 16px;
+}
+
+table {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+#finalPrice {
+  font-size: 30px;
+  color: #ff5101;
+}

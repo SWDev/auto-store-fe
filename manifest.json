@@ -1,0 +1,24 @@
+{
+    "manifest_version": 3,
+    "name": "AutoStore",
+    "description": "Scraper",
+    "version": "1.0",
+    "permissions": ["scripting", "activeTab"],
+    "action": {
+      "default_popup": "index.html",
+      "default_icon": "auto-store.png"
+    },
+    "host_permissions": [
+      "https://fem.encar.com/cars/detail/*"
+    ],
+    "content_scripts": [
+      {
+        "matches": [
+          "https://fem.encar.com/cars/detail/*"
+        ],
+        "js": [
+          "main.js"
+        ]
+      }
+    ]
+  }
