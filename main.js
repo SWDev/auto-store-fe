@@ -1,4 +1,12 @@
-const keys = ["year", "mileage", "displacement", "fuel"];
+const keys = [
+  "year",
+  "연식",
+  "mileage",
+  "displacement",
+  "배기량",
+  "fuel",
+  "연료",
+];
 const tax = {
   diesel: {
     age: {
@@ -359,36 +367,78 @@ const tax = {
 };
 
 chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
-  if (request.action === "getPrice") {
-    const wonPrice = document.querySelector(
-      ".DetailLeadCase_point__vdG4b"
-    ).innerText;
-    const purchasedPriceInMDL =
-      (+wonPrice * 1_000_000) / request.exchangeRateWONtoMDL;
+  if (request.action === "popupOpened") {
     const details = document.querySelector(".DetailSummary_btn_detail__msm-h");
 
     details.click();
 
-    const params = Array.from(document.querySelectorAll("#bottom_sheet li"));
-    const data = params
-      .map((param) => param.innerText.toLowerCase().split("\n"))
-      .filter(([param]) =>
-        keys.find((key) => param.toLowerCase().includes(key))
-      );
-    const { displacementTax, luxuryTax } = calculateTaxes(
-      data,
-      purchasedPriceInMDL
-    );
+    let timeElapsed = 0;
+    const maxTime = 10000; // 10 seconds
+    const intervalTime = 100; // 0.1 second
 
-    sendResponse({
-      price: purchasedPriceInMDL.toFixed(),
-      importTax: displacementTax.toFixed(),
-      shippingFee: 60_000,
-      luxuryTax,
-      finalPrice: purchasedPriceInMDL + displacementTax + 60_000 + luxuryTax,
-    });
+    const checkInterval = setInterval(() => {
+      if (checkElement(".DetailSummary_btn_detail__msm-h", checkInterval)) {
+        getPriceInEur(request, sendResponse);
+
+        return;
+      }
+
+      timeElapsed += intervalTime;
+
+      if (timeElapsed >= maxTime) {
+        clearInterval(checkInterval);
+      }
+    }, intervalTime);
+
+    return true;
+  }
+
+  if (request.action === "getPrice") {
+    getPriceInEur(request, sendResponse);
   }
 });
+
+function getPriceInEur(request, sendResponse) {
+  let wonPrice = document.querySelector(
+    ".DetailLeadCase_point__vdG4b"
+  ).innerText;
+
+  if (wonPrice.includes(",")) {
+    wonPrice = +wonPrice.replace(/,/g, "") / 100;
+  }
+
+  const purchasedPriceInMDL =
+    (+wonPrice * 1_000_000) / request.exchangeRateWON;
+  const details = document.querySelector(".DetailSummary_btn_detail__msm-h");
+
+  details.click();
+
+  const params = Array.from(document.querySelectorAll("#bottom_sheet li"));
+
+  return calculate({ params, purchasedPriceInMDL, sendResponse });
+}
+
+function calculate(options) {
+  const { params, purchasedPriceInMDL, sendResponse } = options;
+  const data = params
+    .map((param) => param.innerText.toLowerCase().split("\n"))
+    .filter(([param]) => keys.find((key) => param.toLowerCase().includes(key)));
+  const { displacementTax, luxuryTax } = calculateTaxes(
+    data,
+    purchasedPriceInMDL
+  );
+  const response = {
+    price: purchasedPriceInMDL.toFixed(),
+    importTax: displacementTax.toFixed(),
+    shippingFee: 60_000,
+    luxuryTax,
+    finalPrice: purchasedPriceInMDL + displacementTax + 60_000 + luxuryTax,
+  };
+
+  sendResponse(response);
+
+  return response;
+}
 
 function findLowest(object, number) {
   const keys = Object.keys(object);
@@ -404,19 +454,12 @@ function findLowest(object, number) {
 }
 
 function calculateTaxes(data, purchasedPriceInMDL) {
-  const fuel = data.find(([param]) => param.includes("fuel"));
-  const fuelType = fuel[1].includes("diesel") ? "diesel" : "petrol";
-  const year = data.find(([param]) => param.includes("year")) || ["", ""];
-  const yearValue = +`20${year[1].split(" ")[1]}`;
-  const carAge = new Date().getFullYear() - yearValue;
-  const yearTax = tax[fuelType].age[carAge];
-  const displacement = +data
-    .find(([param]) => param.includes("displacement"))[1]
-    ?.split(" ")[0]
-    ?.replace(",", "");
-
+  const carAge = getAge(data);
+  const fuel = getFuel(data);
+  const displacement = getDisplacement(data);
+  const yearTax = tax[fuel]?.age[carAge];
   const displacementTax =
-    findLowest(yearTax.displacement, displacement) * displacement;
+    findLowest(yearTax?.displacement, displacement) * displacement;
   const luxuryTax =
     purchasedPriceInMDL >= 600_000
       ? findLowest(tax.luxury, purchasedPriceInMDL) * purchasedPriceInMDL
@@ -426,4 +469,58 @@ function calculateTaxes(data, purchasedPriceInMDL) {
     displacementTax,
     luxuryTax,
   };
+}
+
+function getFuel(data) {
+  const fuel = data.find(
+    ([param]) => param.includes("fuel") || param.includes("연료")
+  ) || ["", ""];
+
+  return getFuelType(fuel[1]);
+}
+
+function getAge(data) {
+  const year = data.find(
+    ([param]) => param.includes("year") || param.includes("연식")
+  ) || ["", ""];
+
+  let yearValue = new Date().getFullYear();
+
+  if (!year[1].includes("년")) {
+    yearValue = year[1].replace(/\D/g, "");
+  } else {
+    yearValue = `20${year[1].slice(0, 2)}`;
+  }
+
+  return new Date().getFullYear() - yearValue;
+}
+
+function getDisplacement(data) {
+  const displacement = data.find(
+    ([param]) =>
+      param.includes("displacement") ||
+      param.includes("배기량") ||
+      param.includes("engine")
+  ) || ["", ""];
+
+  return parseInt(displacement[1].replace(/\D/g, ""));
+}
+
+function getFuelType(fuel) {
+  if (fuel.includes("electric") || fuel.includes("전기")) return "electric";
+  if (fuel.includes("hybrid") || fuel.includes("하이브리드")) return "hybrid";
+  if (fuel.includes("diesel") || fuel.includes("디젤")) return "diesel";
+  if (fuel.includes("petrol") || fuel.includes("휘발유")) return "petrol";
+}
+
+function checkElement(selector, intervalId) {
+  const element = document.querySelector(selector);
+
+  if (element) {
+    clearInterval(intervalId);
+
+    return true;
+  }
+
+  return false;
 }

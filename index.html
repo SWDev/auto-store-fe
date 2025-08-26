@@ -8,27 +8,40 @@
   </head>
   <body>
     <div class="header">
-      <img width="200" src="/auto-store-long.webp" alt="logo" />
-    </div>
-
-    <div class="input-container">
-      <div>
-        <label for="exchangeRateWONInput">Curs MDL/KRW</label>
-        <input id="exchangeRateWONInput" type="number" value="83" />
-      </div>
-
-      <div>
-        <label for="exchangeRateEURInput">Curs EUR/MDL</label>
-        <input id="exchangeRateEURInput" type="number" value="19" />
-      </div>
-
-      <button id="scrapeBtn">Calculează</button>
+      <img width="250" src="assets/auto-store-long.webp" alt="logo" />
     </div>
 
     <div class="price-breakdown">
-      <table border="1"></table>
+      <table border="1">
+        <tr>
+          <th>KRW</th>
+          <th>EUR</th>
+        </tr>
+        <tr>
+          <td align="center"><input type="number" id="KRWInput" /></td>
+          <td align="center"><input type="number" id="EURInput" /></td>
+        </tr>
+      </table>
+    </div>
 
-      <b>Preț acasă: <span id="finalPrice"></span></b>
+    <div class="input-container">
+      <button id="calculateBtn">Calculează</button>
+    </div>
+
+    <img
+      src="/assets/loading.svg"
+      width="80"
+      height="80"
+      alt="loading"
+      class="loading"
+    />
+
+    <div class="price-breakdown">
+      <table id="priceBreakdown" border="1"></table>
+
+      <b style="display: block; margin-top: 20px">
+        Preț acasă: <span id="finalPrice"></span>
+      </b>
     </div>
 
     <script src="popup.js" defer></script>

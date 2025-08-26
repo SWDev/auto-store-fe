@@ -6,7 +6,8 @@
     "permissions": ["scripting", "activeTab"],
     "action": {
       "default_popup": "index.html",
-      "default_icon": "auto-store.png"
+      "default_icon": "assets/auto-store.png",
+      "default_title": "AutoStore"
     },
     "host_permissions": [
       "https://fem.encar.com/cars/detail/*"

@@ -1,51 +1,53 @@
-let globalExchangeRateMDLtoEUR = 19;
-
 window.addEventListener("DOMContentLoaded", async () => {
-  const localStorageEUR = localStorage.getItem("exchangeRateEUR");
-  const localStorageWON = localStorage.getItem("exchangeRateWON");
+  const loader = document.querySelector(".loading");
+  const KRWInput = document.querySelector("#KRWInput");
+  const EURInput = document.querySelector("#EURInput");
 
-  if (!localStorageWON) {
-    localStorage.setItem("exchangeRateWON", 83); // 83 won to 1 MDL
-  }
+  const exchangeRateWON = await setExchangeRate({
+    loader,
+    KRWInput,
+    EURInput,
+  });
 
-  if (!localStorageEUR) {
-    localStorage.setItem("exchangeRateEUR", 19); // 19 MDL to 1 eur;
-  }
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    chrome.tabs.sendMessage(
+      tabs[0].id,
+      { action: "popupOpened", exchangeRateWON },
+      (response) => {
+        loader.style.display = "block";
 
-  document.getElementById("scrapeBtn").addEventListener("click", () => {
-    const exchangeRateWONInput = document.getElementById(
-      "exchangeRateWONInput"
+        updateExchangeRatesDisplay(response);
+      }
     );
-    const exchangeRateEURInput = document.getElementById(
-      "exchangeRateEURInput"
-    );
+  });
 
-    let exchangeRateWONtoMDL = exchangeRateWONInput.value || localStorageWON;
-    let exchangeRateMDLtoEUR = exchangeRateEURInput.value || localStorageEUR;
-
+  document.getElementById("calculateBtn").addEventListener("click", () => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const exchangeRateWON = KRWInput.value;
+      const exchangeRateEUR = EURInput.value;
+
+      localStorage.setItem("exchangeRateWON", exchangeRateWON);
+      localStorage.setItem("exchangeRateEUR", exchangeRateEUR);
+
       chrome.tabs.sendMessage(
         tabs[0].id,
-        { action: "getPrice", exchangeRateWONtoMDL, exchangeRateMDLtoEUR },
+        { action: "getPrice", exchangeRateWON },
         (response) => {
-          exchangeRateWONInput.value = exchangeRateWONtoMDL;
-          exchangeRateEURInput.value = exchangeRateMDLtoEUR;
-
-          localStorage.setItem("exchangeRateWON", exchangeRateWONtoMDL);
-          localStorage.setItem("exchangeRateEUR", exchangeRateMDLtoEUR);
-
-          generatePriceBreakdownTable(response);
-          setFinalPrice(response?.finalPrice);
+          updateExchangeRatesDisplay(response);
         }
       );
     });
   });
 });
 
-function generatePriceBreakdownTable(response) {
-  const table = document.querySelector(".price-breakdown table");
+function updateExchangeRatesDisplay(response) {
+  generatePriceBreakdownTable(response);
+  setFinalPrice(response?.finalPrice);
+}
 
-  console.log("response", response);
+function generatePriceBreakdownTable(response) {
+  const loader = document.querySelector(".loading");
+  const table = document.querySelector("#priceBreakdown");
 
   table.innerHTML = `
         <tr>
@@ -70,6 +72,8 @@ function generatePriceBreakdownTable(response) {
         </tr>
     `;
   }
+
+  loader.style.display = "none";
 }
 
 function setFinalPrice(price) {
@@ -86,4 +90,42 @@ function getPriceInEur(price) {
   const eur = price / localStorage.getItem("exchangeRateEUR");
 
   return `€${eur.toFixed()}`;
+}
+
+async function setExchangeRate({ loader, KRWInput, EURInput }) {
+  const exchangeRateDate = localStorage.getItem("exchangeRateDate");
+
+  if (!exchangeRateDate || isExpiredExchangeRate(new Date(exchangeRateDate))) {
+    loader.style.display = "block";
+
+    const exchangeResponse = await fetch(
+      "https://swdev-hardy.com/api/auto-store/v1/exchange"
+    );
+    const exchangeData = await exchangeResponse.json();
+    const eurToMDL = 1 / exchangeData.EUR;
+
+    localStorage.setItem("exchangeRateDate", new Date().toISOString());
+    localStorage.setItem("exchangeRateWON", exchangeData.KRW.toFixed(4) || 83);
+    localStorage.setItem("exchangeRateEUR", eurToMDL.toFixed(4) || 19);
+
+    loader.style.display = "none";
+  }
+
+  const exchangeRateWON = localStorage.getItem("exchangeRateWON");
+  const exchangeRateEUR = localStorage.getItem("exchangeRateEUR");
+
+  KRWInput.value = exchangeRateWON;
+  EURInput.value = exchangeRateEUR;
+
+  return exchangeRateWON;
+}
+
+function isExpiredExchangeRate(dateToCheck) {
+  const today = new Date();
+  const exchangeRateUpdateTime = new Date(today);
+
+  exchangeRateUpdateTime.setDate(today.getDate());
+  exchangeRateUpdateTime.setHours(0, 0, 0, 0);
+
+  return dateToCheck.getTime() < exchangeRateUpdateTime.getTime();
 }
