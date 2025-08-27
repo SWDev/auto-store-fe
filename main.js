@@ -307,7 +307,7 @@ function setStickyNoteLogoAndPrice(price) {
 
   stickyNote.innerHTML = `
       <img style="width: 20px; height: 20px; object-fit: none;" src="${logoSrc}"/>
-      <span>${priceInEUR}€</span>
+      <span>${priceInEUR.toLocaleString("de-DE", { maximumFractionDigits: 0 })}€</span>
     `;
 }
 

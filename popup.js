@@ -106,7 +106,7 @@ function getPriceInEur(price) {
 
   const eur = price / localStorage.getItem("exchangeRateEUR");
 
-  return `€${eur.toFixed()}`;
+  return `${eur.toLocaleString("de-DE", { maximumFractionDigits: 0 })}€`;
 }
 
 function getPriceInMDL(price) {
@@ -114,7 +114,7 @@ function getPriceInMDL(price) {
     return "🤷‍♀️";
   }
 
-  return `${price.toFixed()} MDL`;
+  return `${price.toLocaleString("de-DE", { maximumFractionDigits: 0 })} MDL`;
 }
 
 async function setExchangeRate({ loader, KRWInput, EURInput }) {
