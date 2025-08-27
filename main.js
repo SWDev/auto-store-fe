@@ -14,61 +14,29 @@ const metrics = [
 createStickyNote();
 calculateOnLoad();
 
-chrome.runtime.onMessage.addListener(async (request, _, sendResponse) => {
-  if (request.action === "popupOpened") {
-    const details = document.querySelector(".DetailSummary_btn_detail__msm-h");
+chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
+  if (request.action === "popupOpened" || request.action === "getPrice") {
+    updateExchangeRatesDisplay(request);
+    setStickyNoteLoader();
 
-    details.click();
+    const intervalId = setInterval(() => {
+      document.querySelector(".DetailSummary_btn_detail__msm-h")?.click();
 
-    let timeElapsed = 0;
-    const maxTime = 10000; // 10 seconds
-    const intervalTime = 100; // 0.1 second
+      if (document.querySelector(".BottomSheet-module_close_btn__FNC9C")) {
+        clearInterval(intervalId);
 
-    const checkInterval = setInterval(() => {
-      if (document.querySelector(".DetailSummary_btn_detail__msm-h")) {
         const calculated = calculatePriceWithFees(request.exchangeRateWON);
 
         sendResponse(calculated);
-
-        return;
       }
+    }, 300);
 
-      timeElapsed += intervalTime;
-
-      if (timeElapsed >= maxTime) {
-        clearInterval(checkInterval);
-      }
-    }, intervalTime);
+    setTimeout(() => {
+      clearInterval(intervalId);
+    }, 20000);
 
     return true;
   }
-
-  // if (request.action === "popupOpened" || request.action === "getPrice") {
-  //   updateExchangeRatesDisplay(request);
-  //   setStickyNoteLoader();
-
-  //   const intervalId = setInterval(() => {
-  //     document.querySelector(".DetailSummary_btn_detail__msm-h")?.click();
-
-  //     if (document.querySelector(".BottomSheet-module_close_btn__FNC9C")) {
-  //       clearInterval(intervalId);
-
-  //       console.log("Calculating...");
-
-  //       const calculated = calculatePriceWithFees(request.exchangeRateWON);
-
-  //       console.log("calculated", calculated);
-
-  //       sendResponse(calculated);
-  //     }
-  //   }, 200);
-
-  //   setTimeout(() => {
-  //     clearInterval(intervalId);
-  //   }, 20000);
-
-  //   return true;
-  // }
 });
 
 async function calculateOnLoad() {
