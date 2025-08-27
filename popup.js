@@ -26,7 +26,6 @@ window.addEventListener("DOMContentLoaded", async () => {
       localStorage.setItem("exchangeRateEUR", exchangeRateEUR);
 
       chrome.tabs.sendMessage(tabs[0].id, { action: "getPrice", exchangeRateWON, exchangeRateEUR }, (response) => {
-        console.log("response", response);
         updateExchangeRatesDisplay(response);
       });
     });
@@ -52,6 +51,10 @@ function generatePriceBreakdownTable(response) {
           <td colspan="2" class="accent">${getPriceInEur(+response?.importTax)} + 40€</td>
         </tr>
         <tr>
+            <th>Taxa de lux</th>
+            <td colspan="2" class="accent">${getPriceInEur(response?.luxuryTax)}</td>
+        </tr>
+        <tr>
           <th rowspan="4" style="border-radius: 0 0 0 6px" >Comisioane</th>
           <th>Total</th>
           <td class="accent">${getPriceInEur(response?.ASFee?.total)}</td>
@@ -69,15 +72,6 @@ function generatePriceBreakdownTable(response) {
           <td>${getPriceInMDL(response?.ASFee?.SVGCommission)}</td>
         </tr>
     `;
-
-  if (response?.luxuryTax) {
-    table.innerHTML += `
-        <tr>
-            <td>Taxa de lux</td>
-            <td><span>${getPriceInEur(response?.luxuryTax)}</span></td>
-        </tr>
-    `;
-  }
 
   loader.style.display = "none";
 }

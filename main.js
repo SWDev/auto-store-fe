@@ -108,8 +108,6 @@ function calculate(options) {
 }
 
 function findLowest(object, number) {
-  if (!object) return 0;
-
   const keys = Object.keys(object);
 
   for (let i = keys.length - 1; i >= 0; i--) {
@@ -130,7 +128,9 @@ function calculateTaxes(data, purchasedPriceInMDL) {
   const yearTax = importTax[fuel]?.age[carAge - 1];
   const displacementTax = findLowest(yearTax?.displacement, displacement) * displacement;
   const luxuryTax =
-    purchasedPriceInMDL >= 600_000 ? findLowest(importTax.luxury, purchasedPriceInMDL) * purchasedPriceInMDL : 0;
+    purchasedPriceInMDL >= 600_000
+      ? (findLowest(importTax.luxury, purchasedPriceInMDL) / 100) * purchasedPriceInMDL
+      : 0;
   const ASFee = calculateASFees(purchasedPriceInMDL, bodyType);
 
   return {
@@ -201,10 +201,16 @@ function getFuel(fuel) {
 function getAge(year) {
   let yearValue = new Date().getFullYear();
 
-  if (!year.includes("년")) {
-    yearValue = year.replace(/\D/g, "");
-  } else {
+  if (year.includes("년")) {
     yearValue = `20${year.slice(0, 2)}`;
+  } else {
+    const yearDigits = year.replace(/\D/g, "");
+
+    if (yearDigits.length === 2) {
+      yearValue = `20${yearDigits}`;
+    } else {
+      yearValue = yearDigits;
+    }
   }
 
   return new Date().getFullYear() - yearValue;
