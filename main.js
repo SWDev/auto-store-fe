@@ -366,6 +366,9 @@ const tax = {
   },
 };
 
+createStickyNote();
+calculateOnLoad();
+
 chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
   if (request.action === "popupOpened") {
     const details = document.querySelector(".DetailSummary_btn_detail__msm-h");
@@ -378,7 +381,9 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
 
     const checkInterval = setInterval(() => {
       if (checkElement(".DetailSummary_btn_detail__msm-h", checkInterval)) {
-        getPriceInEur(request, sendResponse);
+        const calculated = getPriceInEur(request.exchangeRateWON);
+
+        sendResponse(calculated);
 
         return;
       }
@@ -394,11 +399,31 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
   }
 
   if (request.action === "getPrice") {
-    getPriceInEur(request, sendResponse);
+    const calculated = getPriceInEur(request.exchangeRateWON);
+
+    sendResponse(calculated);
   }
 });
 
-function getPriceInEur(request, sendResponse) {
+async function calculateOnLoad() {
+  await setExchangeRate();
+
+  const a = setInterval(() => {
+    document.querySelector(".DetailSummary_btn_detail__msm-h")?.click();
+
+    if (document.querySelector(".BottomSheet-module_close_btn__FNC9C")) {
+      getPriceInEur(localStorage.getItem("exchangeRateWON"));
+      clearInterval(a);
+      document.querySelector(".BottomSheet-module_close_btn__FNC9C").click();
+    }
+  }, 200);
+
+  setTimeout(() => {
+    clearInterval(a);
+  }, 20000);
+}
+
+function getPriceInEur(exchangeRateWON) {
   let wonPrice = document.querySelector(
     ".DetailLeadCase_point__vdG4b"
   ).innerText;
@@ -407,19 +432,14 @@ function getPriceInEur(request, sendResponse) {
     wonPrice = +wonPrice.replace(/,/g, "") / 100;
   }
 
-  const purchasedPriceInMDL =
-    (+wonPrice * 1_000_000) / request.exchangeRateWON;
-  const details = document.querySelector(".DetailSummary_btn_detail__msm-h");
-
-  details.click();
-
+  const purchasedPriceInMDL = (+wonPrice * 1_000_000) / exchangeRateWON;
   const params = Array.from(document.querySelectorAll("#bottom_sheet li"));
 
-  return calculate({ params, purchasedPriceInMDL, sendResponse });
+  return calculate({ params, purchasedPriceInMDL });
 }
 
 function calculate(options) {
-  const { params, purchasedPriceInMDL, sendResponse } = options;
+  const { params, purchasedPriceInMDL } = options;
   const data = params
     .map((param) => param.innerText.toLowerCase().split("\n"))
     .filter(([param]) => keys.find((key) => param.toLowerCase().includes(key)));
@@ -435,12 +455,14 @@ function calculate(options) {
     finalPrice: purchasedPriceInMDL + displacementTax + 60_000 + luxuryTax,
   };
 
-  sendResponse(response);
+  setPriceOnStickyNote(response.finalPrice);
 
   return response;
 }
 
 function findLowest(object, number) {
+  if (!object) return 0;
+
   const keys = Object.keys(object);
   let lowest = keys[0];
 
@@ -523,4 +545,77 @@ function checkElement(selector, intervalId) {
   }
 
   return false;
+}
+
+function createStickyNote() {
+  const stickyNote = document.getElementById("car-calculator-sticky-note");
+
+  if (!stickyNote) {
+    const stickyNote = document.createElement("div");
+    const logSrc =
+      "https://swdev-hardy.com/ui/auto-store-fees/assets/favicon/favicon-32x32.png";
+
+    stickyNote.id = "car-calculator-sticky-note";
+    stickyNote.innerHTML = `<img style="width: 20px; height: 20px; object-fit: none;" src="${logSrc}"/><span>loading...</span>`;
+    stickyNote.style.cssText = `
+      position: fixed;
+      top: 110px;
+      left: 5px;
+      background-color: white;
+      border: 2px solid rgb(255, 80, 0);
+      color: rgb(255, 80, 0);
+      padding: 0 5px;
+      font-size: 24px;
+      text-align: center;
+      border-radius: 8px;
+      font-family: sans-serif;
+      box-shadow: rgba(0, 0, 0, 0.2) 0px 4px 8px;
+      z-index: 10000;
+      width: 125px;
+      transition: transform 0.3s ease-in-out;
+      transform: translateY(-50%);
+      display: flex;
+      align-items: center;
+      justify-content: space-evenly;
+      line-height: 1;
+      height: 38px;
+      font-family: 'Pretendard', sans-serif;
+    `;
+
+    document.body.appendChild(stickyNote);
+  }
+}
+
+function setPriceOnStickyNote(price) {
+  console.log("Setting price on sticky note:", price);
+
+  const stickyNote = document.getElementById("car-calculator-sticky-note");
+
+  if (stickyNote) {
+    const priceInEUR = (
+      price / localStorage.getItem("exchangeRateEUR")
+    ).toFixed();
+    stickyNote.querySelector("span").innerText = priceInEUR + "€";
+  }
+}
+
+async function setExchangeRate() {
+  const exchangeRateDate = localStorage.getItem("exchangeRateDate");
+
+  if (!exchangeRateDate || isExpiredExchangeRate(new Date(exchangeRateDate))) {
+    const exchangeResponse = await fetch(
+      "https://swdev-hardy.com/api/auto-store/v1/exchange"
+    );
+    const exchangeData = await exchangeResponse.json();
+    const eurToMDL = 1 / exchangeData.EUR;
+
+    localStorage.setItem("exchangeRateDate", new Date().toISOString());
+    localStorage.setItem("exchangeRateWON", exchangeData.KRW.toFixed(4) || 83);
+    localStorage.setItem("exchangeRateEUR", eurToMDL.toFixed(4) || 19);
+  }
+
+  const exchangeRateWON = localStorage.getItem("exchangeRateWON");
+  const exchangeRateEUR = localStorage.getItem("exchangeRateEUR");
+
+  return exchangeRateWON;
 }
