@@ -1,375 +1,20 @@
-const keys = [
-  "year",
-  "연식",
-  "mileage",
-  "displacement",
-  "배기량",
-  "fuel",
-  "연료",
-];
-const tax = {
-  diesel: {
-    age: {
-      0: {
-        displacement: {
-          0: 12.23,
-          1500: 31.14,
-          2500: 55.6,
-        },
-      },
-      1: {
-        displacement: {
-          0: 12.23,
-          1500: 31.14,
-          2500: 55.6,
-        },
-      },
-      2: {
-        displacement: {
-          0: 12.23,
-          1500: 31.14,
-          2500: 55.6,
-        },
-      },
-      3: {
-        displacement: {
-          0: 12.67,
-          1500: 31.58,
-          2500: 56.04,
-        },
-      },
-      4: {
-        displacement: {
-          0: 12.67,
-          1500: 31.58,
-          2500: 56.04,
-        },
-      },
-      5: {
-        displacement: {
-          0: 12.9,
-          1500: 31.81,
-          2500: 56.27,
-        },
-      },
-      6: {
-        displacement: {
-          0: 12.9,
-          1500: 31.81,
-          2500: 56.27,
-        },
-      },
-      7: {
-        displacement: {
-          0: 14.19,
-          1500: 34.99,
-          2500: 61.9,
-        },
-      },
-      8: {
-        displacement: {
-          0: 15.61,
-          1500: 38.49,
-          2500: 68.9,
-        },
-      },
-      9: {
-        displacement: {
-          0: 17.17,
-          1500: 42.34,
-          2500: 74.9,
-        },
-      },
-      10: {
-        displacement: {
-          0: 20.6,
-          1500: 50.81,
-          2500: 89.87,
-        },
-      },
-      11: {
-        displacement: {
-          0: 26.79,
-          1500: 66.05,
-          2500: 116.84,
-        },
-      },
-      12: {
-        displacement: {
-          0: 31.79,
-          1500: 71.05,
-          2500: 121.84,
-        },
-      },
-      13: {
-        displacement: {
-          0: 36.79,
-          1500: 76.05,
-          2500: 126.84,
-        },
-      },
-      14: {
-        displacement: {
-          0: 41.79,
-          1500: 81.05,
-          2500: 131.84,
-        },
-      },
-      15: {
-        displacement: {
-          0: 46.79,
-          1500: 86.05,
-          2500: 136.84,
-        },
-      },
-      16: {
-        displacement: {
-          0: 51.79,
-          1500: 91.05,
-          2500: 141.84,
-        },
-      },
-      17: {
-        displacement: {
-          0: 56.79,
-          1500: 96.05,
-          2500: 146.84,
-        },
-      },
-      18: {
-        displacement: {
-          0: 61.79,
-          1500: 101.05,
-          2500: 151.84,
-        },
-      },
-      19: {
-        displacement: {
-          0: 66.79,
-          1500: 106.05,
-          2500: 156.84,
-        },
-      },
-      20: {
-        displacement: {
-          0: 71.79,
-          1500: 111.05,
-          2500: 161.84,
-        },
-      },
-    },
-  },
-  petrol: {
-    0: {
-      displacement: {
-        0: 9.56,
-        1000: 12.23,
-        1500: 18.9,
-        2000: 31.14,
-        3000: 55.6,
-      },
-    },
-    1: {
-      displacement: {
-        0: 9.56,
-        1000: 12.23,
-        1500: 18.9,
-        2000: 31.14,
-        3000: 55.6,
-      },
-    },
-
-    2: {
-      displacement: {
-        0: 9.56,
-        1000: 12.23,
-        1500: 18.9,
-        2000: 31.14,
-        3000: 55.6,
-      },
-    },
-    3: {
-      displacement: {
-        0: 10,
-        1000: 12.67,
-        1500: 19.34,
-        2000: 31.68,
-        3000: 56.04,
-      },
-    },
-    4: {
-      displacement: {
-        0: 10,
-        1000: 12.67,
-        1500: 19.34,
-        2000: 31.68,
-        3000: 56.04,
-      },
-    },
-    5: {
-      displacement: {
-        0: 10.23,
-        1000: 12.9,
-        1500: 19.57,
-        2000: 31.81,
-        3000: 56.27,
-      },
-    },
-    6: {
-      displacement: {
-        0: 10.23,
-        1000: 12.9,
-        1500: 19.57,
-        2000: 31.81,
-        3000: 56.27,
-      },
-    },
-    7: {
-      displacement: {
-        0: 11.25,
-        1000: 14.19,
-        1500: 21.53,
-        2000: 34.99,
-        3000: 61.9,
-      },
-    },
-    8: {
-      displacement: {
-        0: 12.38,
-        1000: 15.61,
-        1500: 23.68,
-        2000: 38.49,
-        3000: 68.09,
-      },
-    },
-    9: {
-      displacement: {
-        0: 13.62,
-        1000: 17.17,
-        1500: 26.05,
-        2000: 42.34,
-        3000: 74.9,
-      },
-    },
-    10: {
-      displacement: {
-        0: 16.34,
-        1000: 20.6,
-        1500: 31.26,
-        2000: 50.81,
-        3000: 89.87,
-      },
-    },
-    11: {
-      displacement: {
-        0: 21.24,
-        1000: 26.79,
-        1500: 40.63,
-        2000: 66.05,
-        3000: 116.84,
-      },
-    },
-    12: {
-      displacement: {
-        0: 26.24,
-        1000: 31.79,
-        1500: 45.79,
-        2000: 71.05,
-        3000: 121.84,
-      },
-    },
-    13: {
-      displacement: {
-        0: 31.24,
-        1000: 36.79,
-        1500: 50.63,
-        2000: 76.05,
-        3000: 126.84,
-      },
-    },
-    14: {
-      displacement: {
-        0: 36.24,
-        1000: 41.79,
-        1500: 55.63,
-        2000: 81.05,
-        3000: 131.84,
-      },
-    },
-    15: {
-      displacement: {
-        0: 41.24,
-        1000: 46.79,
-        1500: 60.63,
-        2000: 86.05,
-        3000: 136.84,
-      },
-    },
-    16: {
-      displacement: {
-        0: 46.24,
-        1000: 51.79,
-        1500: 65.63,
-        2000: 91.05,
-        3000: 141.84,
-      },
-    },
-    17: {
-      displacement: {
-        0: 51.24,
-        1000: 56.79,
-        1500: 70.63,
-        2000: 96.05,
-        3000: 146.84,
-      },
-    },
-    18: {
-      displacement: {
-        0: 56.24,
-        1000: 61.79,
-        1500: 75.63,
-        2000: 101.05,
-        3000: 151.84,
-      },
-    },
-    19: {
-      displacement: {
-        0: 61.24,
-        1000: 66.79,
-        1500: 80.63,
-        2000: 106.05,
-        3000: 156.84,
-      },
-    },
-    20: {
-      displacement: {
-        0: 66.24,
-        1000: 71.79,
-        1500: 85.63,
-        2000: 111.05,
-        3000: 161.84,
-      },
-    },
-  },
-  pluginHybrid: 50,
-  hybrid: 25,
-  luxury: {
-    600000: 2,
-    700001: 3,
-    800001: 4,
-    900001: 5,
-    1000001: 6,
-    1200001: 7,
-    1400001: 8,
-    1600001: 9,
-    1800001: 10,
-  },
+var asFeesIndices = {
+  cargoInsurance: 0,
+  greenMark: 1,
 };
+
+const metrics = [
+  { en: "year", kr: "연식" },
+  { en: "displacement", kr: "배기량" },
+  { en: "fuel", kr: "연료" },
+  { en: "type", kr: "차종" },
+  { en: "mileage", kr: "주행거리" },
+];
 
 createStickyNote();
 calculateOnLoad();
 
-chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
+chrome.runtime.onMessage.addListener(async (request, _, sendResponse) => {
   if (request.action === "popupOpened") {
     const details = document.querySelector(".DetailSummary_btn_detail__msm-h");
 
@@ -380,8 +25,8 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
     const intervalTime = 100; // 0.1 second
 
     const checkInterval = setInterval(() => {
-      if (checkElement(".DetailSummary_btn_detail__msm-h", checkInterval)) {
-        const calculated = getPriceInEur(request.exchangeRateWON);
+      if (document.querySelector(".DetailSummary_btn_detail__msm-h")) {
+        const calculated = calculatePriceWithFees(request.exchangeRateWON);
 
         sendResponse(calculated);
 
@@ -398,35 +43,56 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
     return true;
   }
 
-  if (request.action === "getPrice") {
-    const calculated = getPriceInEur(request.exchangeRateWON);
+  // if (request.action === "popupOpened" || request.action === "getPrice") {
+  //   updateExchangeRatesDisplay(request);
+  //   setStickyNoteLoader();
 
-    sendResponse(calculated);
-  }
+  //   const intervalId = setInterval(() => {
+  //     document.querySelector(".DetailSummary_btn_detail__msm-h")?.click();
+
+  //     if (document.querySelector(".BottomSheet-module_close_btn__FNC9C")) {
+  //       clearInterval(intervalId);
+
+  //       console.log("Calculating...");
+
+  //       const calculated = calculatePriceWithFees(request.exchangeRateWON);
+
+  //       console.log("calculated", calculated);
+
+  //       sendResponse(calculated);
+  //     }
+  //   }, 200);
+
+  //   setTimeout(() => {
+  //     clearInterval(intervalId);
+  //   }, 20000);
+
+  //   return true;
+  // }
 });
 
 async function calculateOnLoad() {
+  await setImportTax();
+  await setASFees();
   await setExchangeRate();
 
-  const a = setInterval(() => {
+  const intervalId = setInterval(() => {
     document.querySelector(".DetailSummary_btn_detail__msm-h")?.click();
 
     if (document.querySelector(".BottomSheet-module_close_btn__FNC9C")) {
-      getPriceInEur(localStorage.getItem("exchangeRateWON"));
-      clearInterval(a);
-      document.querySelector(".BottomSheet-module_close_btn__FNC9C").click();
+      clearInterval(intervalId);
+      calculatePriceWithFees(localStorage.getItem("exchangeRateWON"));
+      document.querySelector(".BottomSheet-module_close_btn__FNC9C")?.click();
     }
   }, 200);
 
   setTimeout(() => {
-    clearInterval(a);
+    clearInterval(intervalId);
   }, 20000);
 }
 
-function getPriceInEur(exchangeRateWON) {
-  let wonPrice = document.querySelector(
-    ".DetailLeadCase_point__vdG4b"
-  ).innerText;
+function calculatePriceWithFees(exchangeRateWON) {
+  let wonPrice = document.querySelector(".DetailLeadCase_point__vdG4b").innerText;
 
   if (wonPrice.includes(",")) {
     wonPrice = +wonPrice.replace(/,/g, "") / 100;
@@ -434,28 +100,41 @@ function getPriceInEur(exchangeRateWON) {
 
   const purchasedPriceInMDL = (+wonPrice * 1_000_000) / exchangeRateWON;
   const params = Array.from(document.querySelectorAll("#bottom_sheet li"));
+  const aggregatedPrice = calculate({ params, purchasedPriceInMDL });
 
-  return calculate({ params, purchasedPriceInMDL });
+  return aggregatedPrice;
 }
 
 function calculate(options) {
   const { params, purchasedPriceInMDL } = options;
-  const data = params
-    .map((param) => param.innerText.toLowerCase().split("\n"))
-    .filter(([param]) => keys.find((key) => param.toLowerCase().includes(key)));
-  const { displacementTax, luxuryTax } = calculateTaxes(
-    data,
-    purchasedPriceInMDL
-  );
+  const dataParams = params.map((param) => param.innerText.toLowerCase().split("\n"));
+  const carData = metrics
+    .map((metric) => {
+      const pairs = dataParams.find((pair) => pair[0].includes(metric.en) || pair[0].includes(metric.kr));
+
+      if (!pairs) return null;
+
+      return {
+        [metric.en]: pairs[1],
+      };
+    })
+    .reduce((acc, line) => {
+      return {
+        ...acc,
+        ...line,
+      };
+    }, {});
+
+  const { displacementTax, luxuryTax, ASFee } = calculateTaxes(carData, purchasedPriceInMDL);
   const response = {
-    price: purchasedPriceInMDL.toFixed(),
-    importTax: displacementTax.toFixed(),
-    shippingFee: 60_000,
+    acquisitionPrice: purchasedPriceInMDL,
+    importTax: displacementTax,
     luxuryTax,
-    finalPrice: purchasedPriceInMDL + displacementTax + 60_000 + luxuryTax,
+    ASFee,
+    totalPrice: +purchasedPriceInMDL + +displacementTax + +luxuryTax + +ASFee.total,
   };
 
-  setPriceOnStickyNote(response.finalPrice);
+  setStickyNoteLogoAndPrice(response.totalPrice);
 
   return response;
 }
@@ -464,68 +143,107 @@ function findLowest(object, number) {
   if (!object) return 0;
 
   const keys = Object.keys(object);
-  let lowest = keys[0];
 
-  for (let i = 1; i < keys.length; i++) {
-    if (keys[i] > number && keys[i] < lowest) {
-      lowest = keys[i];
+  for (let i = keys.length - 1; i >= 0; i--) {
+    if (keys[i] <= number) {
+      return object[keys[i]];
     }
   }
 
-  return object[lowest];
+  return object[keys[0]];
 }
 
 function calculateTaxes(data, purchasedPriceInMDL) {
-  const carAge = getAge(data);
-  const fuel = getFuel(data);
-  const displacement = getDisplacement(data);
-  const yearTax = tax[fuel]?.age[carAge];
-  const displacementTax =
-    findLowest(yearTax?.displacement, displacement) * displacement;
+  const importTax = JSON.parse(localStorage.getItem("importTax"));
+  const carAge = getAge(data.year);
+  const fuel = getFuel(data.fuel);
+  const displacement = getDisplacement(data.displacement);
+  const bodyType = getBodyType(data.type);
+  const yearTax = importTax[fuel]?.age[carAge - 1];
+  const displacementTax = findLowest(yearTax?.displacement, displacement) * displacement;
   const luxuryTax =
-    purchasedPriceInMDL >= 600_000
-      ? findLowest(tax.luxury, purchasedPriceInMDL) * purchasedPriceInMDL
-      : 0;
+    purchasedPriceInMDL >= 600_000 ? findLowest(importTax.luxury, purchasedPriceInMDL) * purchasedPriceInMDL : 0;
+  const ASFee = calculateASFees(purchasedPriceInMDL, bodyType);
 
   return {
     displacementTax,
     luxuryTax,
+    ASFee,
   };
 }
 
-function getFuel(data) {
-  const fuel = data.find(
-    ([param]) => param.includes("fuel") || param.includes("연료")
-  ) || ["", ""];
+function calculateASFees(mdlPrice, bodyType) {
+  const fees = JSON.parse(localStorage.getItem("asFees"));
+  const eurPrice = mdlPrice / (localStorage.getItem("exchangeRateEUR") || 19);
+  const cargoInsurance = getFeeFromColumn(fees[asFeesIndices.cargoInsurance].columns, bodyType);
+  const greenMark = getFeeFromColumn(fees[asFeesIndices.greenMark].columns, bodyType);
 
-  return getFuelType(fuel[1]);
+  let SVGCommission = 0;
+
+  for (let index = 2; index < fees.length; index++) {
+    const fee = fees[index];
+    const ceiling = +fee.id.replace(/svg_/, "").split("_")[1].replace(/k/, "000");
+
+    if (eurPrice <= ceiling) {
+      SVGCommission = getFeeFromColumn(fee.columns, bodyType);
+
+      return returnAggregatedASFees({
+        cargoInsurance,
+        greenMark,
+        SVGCommission,
+        mdlPrice,
+      });
+    }
+  }
+
+  return returnAggregatedASFees({
+    cargoInsurance,
+    greenMark,
+    SVGCommission,
+    mdlPrice,
+  });
 }
 
-function getAge(data) {
-  const year = data.find(
-    ([param]) => param.includes("year") || param.includes("연식")
-  ) || ["", ""];
+function returnAggregatedASFees({ cargoInsurance, greenMark, SVGCommission, mdlPrice }) {
+  const insurance = +mdlPrice * (+cargoInsurance / 100);
 
+  return {
+    total: insurance + greenMark + SVGCommission,
+    cargoInsurance: insurance,
+    greenMark,
+    SVGCommission,
+  };
+}
+
+function getFeeFromColumn(columns, bodyType) {
+  return columns[Object.keys(columns).find((one) => one.toLowerCase()?.includes(bodyType))];
+}
+
+function getBodyType(type) {
+  if (type === "suv") return "suv";
+  if (type?.includes("rv") || type?.includes("차")) return "minivan";
+
+  return "sedan";
+}
+
+function getFuel(fuel) {
+  return getFuelType(fuel);
+}
+
+function getAge(year) {
   let yearValue = new Date().getFullYear();
 
-  if (!year[1].includes("년")) {
-    yearValue = year[1].replace(/\D/g, "");
+  if (!year.includes("년")) {
+    yearValue = year.replace(/\D/g, "");
   } else {
-    yearValue = `20${year[1].slice(0, 2)}`;
+    yearValue = `20${year.slice(0, 2)}`;
   }
 
   return new Date().getFullYear() - yearValue;
 }
 
-function getDisplacement(data) {
-  const displacement = data.find(
-    ([param]) =>
-      param.includes("displacement") ||
-      param.includes("배기량") ||
-      param.includes("engine")
-  ) || ["", ""];
-
-  return parseInt(displacement[1].replace(/\D/g, ""));
+function getDisplacement(displacement) {
+  return parseInt(displacement.replace(/\D/g, ""));
 }
 
 function getFuelType(fuel) {
@@ -538,28 +256,13 @@ function getFuelType(fuel) {
   if (fuel.includes("gasoline") || fuel.includes("가솔린")) return "petrol";
 }
 
-function checkElement(selector, intervalId) {
-  const element = document.querySelector(selector);
-
-  if (element) {
-    clearInterval(intervalId);
-
-    return true;
-  }
-
-  return false;
-}
-
 function createStickyNote() {
   const stickyNote = document.getElementById("car-calculator-sticky-note");
 
   if (!stickyNote) {
     const stickyNote = document.createElement("div");
-    const logSrc =
-      "https://swdev-hardy.com/ui/auto-store-fees/assets/favicon/favicon-32x32.png";
 
     stickyNote.id = "car-calculator-sticky-note";
-    stickyNote.innerHTML = `<img style="width: 20px; height: 20px; object-fit: none;" src="${logSrc}"/><span>loading...</span>`;
     stickyNote.style.cssText = `
       position: fixed;
       top: 110px;
@@ -568,7 +271,8 @@ function createStickyNote() {
       border: 2px solid rgb(255, 80, 0);
       color: rgb(255, 80, 0);
       padding: 0 5px;
-      font-size: 24px;
+      font-size: 22px;
+      white-space: nowrap;
       text-align: center;
       border-radius: 8px;
       font-family: sans-serif;
@@ -586,41 +290,38 @@ function createStickyNote() {
     `;
 
     document.body.appendChild(stickyNote);
+
+    setStickyNoteLoader();
   }
 }
 
-function setPriceOnStickyNote(price) {
-  console.log("Setting price on sticky note:", price);
-
+function setStickyNoteLoader() {
   const stickyNote = document.getElementById("car-calculator-sticky-note");
 
-  if (stickyNote) {
-    const priceInEUR = (
-      price / localStorage.getItem("exchangeRateEUR")
-    ).toFixed();
-    stickyNote.querySelector("span").innerText = priceInEUR + "€";
+  if (!stickyNote) {
+    return;
   }
+
+  const loaderSrc = "https://swdev-hardy.com/ui/auto-store-fees/assets/loading.svg";
+
+  stickyNote.innerHTML = `<img style="width: 25px; height: 25px; object-fit: contain;" src="${loaderSrc}"/>`;
 }
 
-async function setExchangeRate() {
-  const exchangeRateDate = localStorage.getItem("exchangeRateDate");
+function setStickyNoteLogoAndPrice(price) {
+  const stickyNote = document.getElementById("car-calculator-sticky-note");
 
-  if (!exchangeRateDate || isExpiredExchangeRate(new Date(exchangeRateDate))) {
-    const exchangeResponse = await fetch(
-      "https://swdev-hardy.com/api/auto-store/v1/exchange"
-    );
-    const exchangeData = await exchangeResponse.json();
-    const eurToMDL = 1 / exchangeData.EUR;
-
-    localStorage.setItem("exchangeRateDate", new Date().toISOString());
-    localStorage.setItem("exchangeRateWON", exchangeData.KRW.toFixed(4) || 83);
-    localStorage.setItem("exchangeRateEUR", eurToMDL.toFixed(4) || 19);
+  if (!stickyNote) {
+    return;
   }
 
-  const exchangeRateWON = localStorage.getItem("exchangeRateWON");
-  const exchangeRateEUR = localStorage.getItem("exchangeRateEUR");
+  const logoSrc = "https://swdev-hardy.com/ui/auto-store-fees/assets/favicon/favicon-32x32.png";
 
-  return exchangeRateWON;
+  const priceInEUR = (price / localStorage.getItem("exchangeRateEUR")).toFixed();
+
+  stickyNote.innerHTML = `
+      <img style="width: 20px; height: 20px; object-fit: none;" src="${logoSrc}"/>
+      <span>${priceInEUR}€</span>
+    `;
 }
 
 function isExpiredExchangeRate(dateToCheck) {
@@ -631,4 +332,57 @@ function isExpiredExchangeRate(dateToCheck) {
   exchangeRateUpdateTime.setHours(0, 0, 0, 0);
 
   return dateToCheck.getTime() < exchangeRateUpdateTime.getTime();
+}
+
+function updateExchangeRatesDisplay(request) {
+  const { exchangeRateWON, exchangeRateEUR } = request;
+  const storedWON = localStorage.getItem("exchangeRateWON");
+  const storedEUR = localStorage.getItem("exchangeRateEUR");
+
+  if (storedWON !== exchangeRateWON && exchangeRateWON) {
+    localStorage.setItem("exchangeRateWON", exchangeRateWON);
+  }
+
+  if (storedEUR !== exchangeRateEUR && exchangeRateEUR) {
+    localStorage.setItem("exchangeRateEUR", exchangeRateEUR);
+  }
+}
+
+async function setExchangeRate() {
+  const exchangeRateDate = localStorage.getItem("exchangeRateDate");
+
+  if (!exchangeRateDate || isExpiredExchangeRate(new Date(exchangeRateDate))) {
+    const exchangeResponse = await fetch("https://swdev-hardy.com/api/auto-store/v1/exchange");
+    const exchangeData = await exchangeResponse.json();
+    const eurToMDL = 1 / exchangeData.EUR;
+
+    localStorage.setItem("exchangeRateDate", new Date().toISOString());
+    localStorage.setItem("exchangeRateWON", exchangeData.KRW.toFixed(4) || 83);
+    localStorage.setItem("exchangeRateEUR", eurToMDL.toFixed(4) || 19);
+  }
+
+  const exchangeRateWON = localStorage.getItem("exchangeRateWON");
+
+  return exchangeRateWON;
+}
+
+async function setImportTax() {
+  const response = await fetch(
+    "http://localhost:3000/v1/taxing/import-tax"
+    // "https://swdev-hardy.com/api/auto-store/v1/taxing/import-tax"
+  );
+  const data = await response.json();
+
+  localStorage.setItem("importTax", JSON.stringify(data));
+
+  return data;
+}
+
+async function setASFees() {
+  const response = await fetch("https://swdev-hardy.com/api/auto-store/v1/taxing");
+  const data = await response.json();
+
+  localStorage.setItem("asFees", JSON.stringify(data));
+
+  return data;
 }

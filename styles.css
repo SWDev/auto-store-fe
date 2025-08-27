@@ -9,8 +9,12 @@ html {
   width: 100%;
 }
 
+.header {
+  width: 430px;
+}
+
 .header img {
-  width: 250px;
+  width: 200px;
   height: auto;
   margin: 0 auto;
   display: block;
@@ -27,12 +31,14 @@ html {
   width: 100%;
 }
 
-.input-container input {
-  margin: 9px 0 0;
+input {
+  width: 100%;
+  margin: 0;
   height: 32px;
   border-radius: 6px;
   border: solid 2px #dedede;
   padding: 0 10px;
+  box-sizing: border-box;
 }
 
 .input-container div {
@@ -46,7 +52,7 @@ html {
   padding: 10px 20px;
   font-size: 16px;
   cursor: pointer;
-  border-radius: 5px;
+  border-radius: 6px;
   display: block;
   margin: 0 auto;
 }
@@ -57,18 +63,86 @@ html {
 }
 
 table {
+  box-sizing: border-box;
   width: 100%;
+  border: none;
+  border-radius: 8px;
+  border-collapse: collapse;
 }
 
-#finalPrice {
+th,
+td {
+  border: none;
+  text-align: left;
+  padding: 5px 10px;
+}
+
+.exchange-table {
+  margin: 10px;
+  width: calc(100% - 20px);
+  background-color: #dedede;
+  padding: 5px;
+  font-size: 16px;
+}
+
+.exchange-table td {
+  padding: 5px;
+}
+
+.price-breakdown th,
+.price-breakdown td:not(:last-of-type) {
+  padding: 10px;
+}
+
+.price-breakdown tr:nth-of-type(odd) th,
+.price-breakdown tr:nth-of-type(odd) td {
+  background-color: #dedede;
+}
+
+.price-breakdown tr:nth-of-type(even) th,
+.price-breakdown tr:nth-of-type(even) td {
+  background-color: #f9f9f9;
+}
+
+.price-breakdown tr:first-of-type th {
+  border-radius: 6px 0 0 0;
+}
+
+.price-breakdown tr:first-of-type td {
+  border-radius: 0 6px 0 0;
+}
+
+.price-breakdown tr:last-of-type th {
+  border-radius: 0 0 0 6px;
+}
+
+.price-breakdown tr:last-of-type td {
+  border-radius: 0 0 6px 0;
+}
+
+.price-breakdown > b {
+  display: block;
+  margin-top: 20px;
+  background: #dedede;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+#totalPrice {
   font-size: 30px;
   color: #ff5101;
+  padding-left: 45px;
 }
 
-.loading {
+#loader {
   width: 80px;
   height: 80px;
   object-fit: contain;
   display: block;
   margin: 20px auto;
+}
+
+.accent {
+  color: #ff5101;
+  font-weight: bold;
 }

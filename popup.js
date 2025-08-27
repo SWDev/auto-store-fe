@@ -1,24 +1,20 @@
 window.addEventListener("DOMContentLoaded", async () => {
-  const loader = document.querySelector(".loading");
+  const loader = document.querySelector("#loader");
   const KRWInput = document.querySelector("#KRWInput");
   const EURInput = document.querySelector("#EURInput");
 
-  const exchangeRateWON = await setExchangeRate({
+  const { exchangeRateEUR, exchangeRateWON } = await setExchangeRate({
     loader,
     KRWInput,
     EURInput,
   });
 
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    chrome.tabs.sendMessage(
-      tabs[0].id,
-      { action: "popupOpened", exchangeRateWON },
-      (response) => {
-        loader.style.display = "block";
+    chrome.tabs.sendMessage(tabs[0].id, { action: "popupOpened", exchangeRateWON, exchangeRateEUR }, (response) => {
+      loader.style.display = "block";
 
-        updateExchangeRatesDisplay(response);
-      }
-    );
+      updateExchangeRatesDisplay(response);
+    });
   });
 
   document.getElementById("calculateBtn").addEventListener("click", () => {
@@ -29,38 +25,48 @@ window.addEventListener("DOMContentLoaded", async () => {
       localStorage.setItem("exchangeRateWON", exchangeRateWON);
       localStorage.setItem("exchangeRateEUR", exchangeRateEUR);
 
-      chrome.tabs.sendMessage(
-        tabs[0].id,
-        { action: "getPrice", exchangeRateWON },
-        (response) => {
-          updateExchangeRatesDisplay(response);
-        }
-      );
+      chrome.tabs.sendMessage(tabs[0].id, { action: "getPrice", exchangeRateWON, exchangeRateEUR }, (response) => {
+        console.log("response", response);
+        updateExchangeRatesDisplay(response);
+      });
     });
   });
 });
 
 function updateExchangeRatesDisplay(response) {
   generatePriceBreakdownTable(response);
-  setFinalPrice(response?.finalPrice);
+  setTotalPrice(response?.totalPrice);
 }
 
 function generatePriceBreakdownTable(response) {
-  const loader = document.querySelector(".loading");
+  const loader = document.querySelector("#loader");
   const table = document.querySelector("#priceBreakdown");
 
   table.innerHTML = `
         <tr>
-            <td>Preț cumpărare</td>
-            <td><span>${getPriceInEur(response?.price)}</span></td>
+          <th>Preț cumpărare</th>
+          <td colspan="2" class="accent">${getPriceInEur(response?.acquisitionPrice)}</td>
         </tr>
         <tr>
-            <td>Taxa devamare</td>
-            <td><span>${getPriceInEur(response?.importTax)}</span></td>
+          <th>Taxa devamare</th>
+          <td colspan="2" class="accent">${getPriceInEur(+response?.importTax)} + 40€</td>
         </tr>
         <tr>
-            <td>Preț logistică</td>
-            <td><span>${getPriceInEur(response?.shippingFee)}</span></td>
+          <th rowspan="4" style="border-radius: 0 0 0 6px" >Comisioane</th>
+          <th>Total</th>
+          <td class="accent">${getPriceInEur(response?.ASFee?.total)}</td>
+        </tr>
+        <tr>
+          <td>Asigurare cargo</td>
+          <td>${getPriceInMDL(response?.ASFee?.cargoInsurance)}</td>
+        </tr>
+        <tr>
+          <td>Green Mark</td>
+          <td>${getPriceInMDL(response?.ASFee?.greenMark)}</td>
+        </tr>
+        <tr>
+          <td>Comision SVG</td>
+          <td>${getPriceInMDL(response?.ASFee?.SVGCommission)}</td>
         </tr>
     `;
 
@@ -76,14 +82,14 @@ function generatePriceBreakdownTable(response) {
   loader.style.display = "none";
 }
 
-function setFinalPrice(price) {
-  const finalPrice = document.querySelector("#finalPrice");
+function setTotalPrice(price) {
+  const totalPrice = document.querySelector("#totalPrice");
 
-  finalPrice.innerText = getPriceInEur(price);
+  totalPrice.innerText = getPriceInEur(+price + 40);
 }
 
 function getPriceInEur(price) {
-  if (price === undefined || price === null) {
+  if (price === undefined || price === null || isNaN(price)) {
     return "🤷‍♀️";
   }
 
@@ -92,15 +98,21 @@ function getPriceInEur(price) {
   return `€${eur.toFixed()}`;
 }
 
+function getPriceInMDL(price) {
+  if (price === undefined || price === null) {
+    return "🤷‍♀️";
+  }
+
+  return `${price.toFixed()} MDL`;
+}
+
 async function setExchangeRate({ loader, KRWInput, EURInput }) {
   const exchangeRateDate = localStorage.getItem("exchangeRateDate");
 
   if (!exchangeRateDate || isExpiredExchangeRate(new Date(exchangeRateDate))) {
     loader.style.display = "block";
 
-    const exchangeResponse = await fetch(
-      "https://swdev-hardy.com/api/auto-store/v1/exchange"
-    );
+    const exchangeResponse = await fetch("https://swdev-hardy.com/api/auto-store/v1/exchange");
     const exchangeData = await exchangeResponse.json();
     const eurToMDL = 1 / exchangeData.EUR;
 
@@ -117,7 +129,7 @@ async function setExchangeRate({ loader, KRWInput, EURInput }) {
   KRWInput.value = exchangeRateWON;
   EURInput.value = exchangeRateEUR;
 
-  return exchangeRateWON;
+  return { exchangeRateWON, exchangeRateEUR };
 }
 
 function isExpiredExchangeRate(dateToCheck) {

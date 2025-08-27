@@ -8,40 +8,30 @@
   </head>
   <body>
     <div class="header">
-      <img width="250" src="assets/auto-store-long.webp" alt="logo" />
+      <img width="200" src="assets/auto-store-long.webp" alt="logo" />
     </div>
 
-    <div class="price-breakdown">
-      <table border="1">
-        <tr>
-          <th>KRW</th>
-          <th>EUR</th>
-        </tr>
-        <tr>
-          <td align="center"><input type="number" id="KRWInput" /></td>
-          <td align="center"><input type="number" id="EURInput" /></td>
-        </tr>
-      </table>
-    </div>
+    <table class="exchange-table">
+      <tr>
+        <th>KRW</th>
+        <th>EUR</th>
+      </tr>
+      <tr>
+        <td align="center"><input type="number" id="KRWInput" /></td>
+        <td align="center"><input type="number" id="EURInput" /></td>
+      </tr>
+    </table>
 
     <div class="input-container">
       <button id="calculateBtn">Calculează</button>
     </div>
 
-    <img
-      src="/assets/loading.svg"
-      width="80"
-      height="80"
-      alt="loading"
-      class="loading"
-    />
+    <img src="/assets/loading.svg" width="80" height="80" alt="loading" id="loader" />
 
     <div class="price-breakdown">
-      <table id="priceBreakdown" border="1"></table>
+      <table id="priceBreakdown"></table>
 
-      <b style="display: block; margin-top: 20px">
-        Preț acasă: <span id="finalPrice"></span>
-      </b>
+      <b> Preț final: <span id="totalPrice"></span> </b>
     </div>
 
     <script src="popup.js" defer></script>
