@@ -531,8 +531,11 @@ function getDisplacement(data) {
 function getFuelType(fuel) {
   if (fuel.includes("electric") || fuel.includes("전기")) return "electric";
   if (fuel.includes("hybrid") || fuel.includes("하이브리드")) return "hybrid";
+  if (fuel.includes("gasoline + electric") || fuel.includes("가솔린+전기")) return "hybrid";
+  if (fuel.includes("diesel + electric") || fuel.includes("디젤 + 전기")) return "hybrid";
   if (fuel.includes("diesel") || fuel.includes("디젤")) return "diesel";
   if (fuel.includes("petrol") || fuel.includes("휘발유")) return "petrol";
+  if (fuel.includes("gasoline") || fuel.includes("가솔린")) return "petrol";
 }
 
 function checkElement(selector, intervalId) {
@@ -618,4 +621,14 @@ async function setExchangeRate() {
   const exchangeRateEUR = localStorage.getItem("exchangeRateEUR");
 
   return exchangeRateWON;
+}
+
+function isExpiredExchangeRate(dateToCheck) {
+  const today = new Date();
+  const exchangeRateUpdateTime = new Date(today);
+
+  exchangeRateUpdateTime.setDate(today.getDate());
+  exchangeRateUpdateTime.setHours(0, 0, 0, 0);
+
+  return dateToCheck.getTime() < exchangeRateUpdateTime.getTime();
 }
