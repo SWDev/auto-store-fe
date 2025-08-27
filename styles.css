@@ -94,13 +94,13 @@ td {
   padding: 10px;
 }
 
-.price-breakdown tr:nth-of-type(odd) th,
-.price-breakdown tr:nth-of-type(odd) td {
+.price-breakdown tr.darker th,
+.price-breakdown tr.darker td {
   background-color: #dedede;
 }
 
-.price-breakdown tr:nth-of-type(even) th,
-.price-breakdown tr:nth-of-type(even) td {
+.price-breakdown tr.lighter th,
+.price-breakdown tr.lighter td {
   background-color: #f9f9f9;
 }
 
@@ -144,5 +144,11 @@ td {
 
 .accent {
   color: #ff5101;
+  font-weight: bold;
+}
+
+.centered-bold {
+  display: block;
+  text-align: center;
   font-weight: bold;
 }

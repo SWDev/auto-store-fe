@@ -93,13 +93,12 @@ function calculate(options) {
       };
     }, {});
 
-  const { displacementTax, luxuryTax, ASFee } = calculateTaxes(carData, purchasedPriceInMDL);
+  const { importTaxes, ASFee } = calculateTaxes(carData, purchasedPriceInMDL);
   const response = {
     acquisitionPrice: purchasedPriceInMDL,
-    importTax: displacementTax,
-    luxuryTax,
+    importTaxes: importTaxes,
     ASFee,
-    totalPrice: +purchasedPriceInMDL + +displacementTax + +luxuryTax + +ASFee.total,
+    totalPrice: +purchasedPriceInMDL + +importTaxes.total + ASFee.total,
   };
 
   setStickyNoteLogoAndPrice(response.totalPrice);
@@ -120,24 +119,38 @@ function findLowest(object, number) {
 }
 
 function calculateTaxes(data, purchasedPriceInMDL) {
-  const importTax = JSON.parse(localStorage.getItem("importTax"));
+  const bodyType = getBodyType(data.type);
+  const ASFee = calculateASFees(purchasedPriceInMDL, bodyType);
+  const importTaxes = calculateImportTaxes(data, purchasedPriceInMDL);
+
+  return {
+    importTaxes,
+    ASFee,
+  };
+}
+
+function calculateImportTaxes(data, purchasedPriceInMDL) {
+  const taxTable = JSON.parse(localStorage.getItem("importTax"));
   const carAge = getAge(data.year);
   const fuel = getFuel(data.fuel);
   const displacement = getDisplacement(data.displacement);
-  const bodyType = getBodyType(data.type);
-  const yearTax = importTax[fuel]?.age[carAge - 1];
-  const displacementTax = findLowest(yearTax?.displacement, displacement) * displacement;
-  const luxuryTax =
-    purchasedPriceInMDL >= 600_000
-      ? (findLowest(importTax.luxury, purchasedPriceInMDL) / 100) * purchasedPriceInMDL
-      : 0;
-  const ASFee = calculateASFees(purchasedPriceInMDL, bodyType);
+  const yearTax = taxTable[fuel]?.age[carAge - 1];
+  const engineTax = findLowest(yearTax?.displacement, displacement) * displacement;
+  const luxuryTax = calculateLuxuryTax(purchasedPriceInMDL, taxTable);
+  const customsTax = Math.min(purchasedPriceInMDL * 0.004, 1800 * +(localStorage.getItem("exchangeRateEUR") || 19));
 
   return {
-    displacementTax,
+    total: engineTax + luxuryTax + customsTax,
+    customsTax,
+    engineTax,
     luxuryTax,
-    ASFee,
   };
+}
+
+function calculateLuxuryTax(price, taxTable) {
+  const luxuryTax = price >= 600_000 ? (findLowest(taxTable.luxury, price) / 100) * price : 0;
+
+  return luxuryTax;
 }
 
 function calculateASFees(mdlPrice, bodyType) {

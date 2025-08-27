@@ -42,32 +42,49 @@ function generatePriceBreakdownTable(response) {
   const table = document.querySelector("#priceBreakdown");
 
   table.innerHTML = `
-        <tr>
+        <tr class="darker">
           <th>Preț cumpărare</th>
           <td colspan="2" class="accent">${getPriceInEur(response?.acquisitionPrice)}</td>
         </tr>
-        <tr>
-          <th>Taxa devamare</th>
-          <td colspan="2" class="accent">${getPriceInEur(+response?.importTax)} + 40€</td>
+
+        <tr class="lighter">
+          <th rowspan="4">
+            <b class="centered-bold">Devamare</b>
+            <b class="centered-bold accent">
+              ${getPriceInEur(response?.importTaxes?.total)}
+            </b>
+          </th>
         </tr>
-        <tr>
-            <th>Taxa de lux</th>
-            <td colspan="2" class="accent">${getPriceInEur(response?.luxuryTax)}</td>
+        <tr class="lighter">
+          <td>Suma accizelor</td>
+          <td colspan="2">${getPriceInEur(+response?.importTaxes?.engineTax)}</td>
         </tr>
-        <tr>
-          <th rowspan="4" style="border-radius: 0 0 0 6px" >Comisioane</th>
-          <th>Total</th>
-          <td class="accent">${getPriceInEur(response?.ASFee?.total)}</td>
+        <tr class="darker">
+          <td>Proceduri vamale</td>
+          <td colspan="2">${getPriceInEur(+response?.importTaxes?.customsTax)}</td>
         </tr>
-        <tr>
+        <tr class="lighter">
+          <td>Cota de acciz lux</td>
+          <td colspan="2">${getPriceInEur(+response?.importTaxes?.luxuryTax)}</td>
+        </tr>
+
+        <tr class="darker">
+          <th rowspan="4" style="border-radius: 0 0 0 6px;" >
+            <b class="centered-bold">Comisioane</b>
+            <b class="centered-bold accent">
+              ${getPriceInEur(response?.ASFee?.total)}
+            </b>
+          </th>
+        </tr>
+        <tr class="darker">
           <td>Asigurare cargo</td>
           <td>${getPriceInMDL(response?.ASFee?.cargoInsurance)}</td>
         </tr>
-        <tr>
+        <tr class="lighter">
           <td>Green Mark</td>
           <td>${getPriceInMDL(response?.ASFee?.greenMark)}</td>
         </tr>
-        <tr>
+        <tr class="darker">
           <td>Comision SVG</td>
           <td>${getPriceInMDL(response?.ASFee?.SVGCommission)}</td>
         </tr>
@@ -79,7 +96,7 @@ function generatePriceBreakdownTable(response) {
 function setTotalPrice(price) {
   const totalPrice = document.querySelector("#totalPrice");
 
-  totalPrice.innerText = getPriceInEur(+price + 40);
+  totalPrice.innerText = getPriceInEur(+price);
 }
 
 function getPriceInEur(price) {
