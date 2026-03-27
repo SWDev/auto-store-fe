@@ -7,7 +7,7 @@ const metrics = [
   { en: "year", kr: "연식" },
   { en: "displacement", kr: "배기량" },
   { en: "fuel", kr: "연료" },
-  { en: "type", kr: "차종" },
+  { en: "models", kr: "차종" },
   { en: "mileage", kr: "주행거리" },
 ];
 
@@ -20,9 +20,9 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
     setStickyNoteLoader();
 
     const intervalId = setInterval(() => {
-      document.querySelector(".DetailSummary_btn_detail__msm-h")?.click();
+      document.querySelector(".rwLLFeYcq5")?.click();
 
-      if (document.querySelector(".BottomSheet-module_close_btn__FNC9C")) {
+      if (document.querySelector("button[class*='BottomSheet-module_close_btn__']")) {
         clearInterval(intervalId);
 
         const calculated = calculatePriceWithFees(request.exchangeRateWON);
@@ -45,12 +45,12 @@ async function calculateOnLoad() {
   await setExchangeRate();
 
   const intervalId = setInterval(() => {
-    document.querySelector(".DetailSummary_btn_detail__msm-h")?.click();
+    document.querySelector(".rwLLFeYcq5")?.click();
 
-    if (document.querySelector(".BottomSheet-module_close_btn__FNC9C")) {
+    if (document.querySelector("button[class*='BottomSheet-module_close_btn__']")) {
       clearInterval(intervalId);
       calculatePriceWithFees(localStorage.getItem("exchangeRateWON"));
-      document.querySelector(".BottomSheet-module_close_btn__FNC9C")?.click();
+      document.querySelector("button[class*='BottomSheet-module_close_btn__']").click();
     }
   }, 200);
 
@@ -60,7 +60,7 @@ async function calculateOnLoad() {
 }
 
 function calculatePriceWithFees(exchangeRateWON) {
-  let wonPrice = document.querySelector(".DetailLeadCase_point__vdG4b").innerText;
+  let wonPrice = document.querySelector(".z7tWTEs7N0")?.innerText || "0";
 
   if (wonPrice.includes(",")) {
     wonPrice = +wonPrice.replace(/,/g, "") / 100;
@@ -107,6 +107,10 @@ function calculate(options) {
 }
 
 function findLowest(object, number) {
+  if (!object || typeof object !== "object") {
+    return 0;
+  }
+
   const keys = Object.keys(object);
 
   for (let i = keys.length - 1; i >= 0; i--) {
@@ -137,7 +141,7 @@ function calculateImportTaxes(data, purchasedPriceInMDL) {
   const yearTax = taxTable[fuel]?.age[carAge - 1];
   const engineTax = findLowest(yearTax?.displacement, displacement) * displacement;
   const luxuryTax = calculateLuxuryTax(purchasedPriceInMDL, taxTable);
-  const customsTax = Math.min(purchasedPriceInMDL * 0.004, 1800 * +(localStorage.getItem("exchangeRateEUR") || 19));
+  const customsTax = purchasedPriceInMDL / 20 > 1000 ? 1000 : 400;
 
   return {
     total: engineTax + luxuryTax + customsTax,
@@ -157,7 +161,7 @@ function calculateASFees(mdlPrice, bodyType) {
   const fees = JSON.parse(localStorage.getItem("asFees"));
   const eurPrice = mdlPrice / (localStorage.getItem("exchangeRateEUR") || 19);
   const cargoInsurance = getFeeFromColumn(fees[asFeesIndices.cargoInsurance].columns, bodyType);
-  const greenMark = getFeeFromColumn(fees[asFeesIndices.greenMark].columns, bodyType);
+  // const greenMark = getFeeFromColumn(fees[asFeesIndices.greenMark].columns, bodyType);
 
   let SVGCommission = 0;
 
@@ -170,7 +174,6 @@ function calculateASFees(mdlPrice, bodyType) {
 
       return returnAggregatedASFees({
         cargoInsurance,
-        greenMark,
         SVGCommission,
         mdlPrice,
       });
@@ -179,19 +182,17 @@ function calculateASFees(mdlPrice, bodyType) {
 
   return returnAggregatedASFees({
     cargoInsurance,
-    greenMark,
     SVGCommission,
     mdlPrice,
   });
 }
 
-function returnAggregatedASFees({ cargoInsurance, greenMark, SVGCommission, mdlPrice }) {
+function returnAggregatedASFees({ cargoInsurance, SVGCommission, mdlPrice }) {
   const insurance = +mdlPrice * (+cargoInsurance / 100);
 
   return {
-    total: insurance + greenMark + SVGCommission,
+    total: insurance + SVGCommission,
     cargoInsurance: insurance,
-    greenMark,
     SVGCommission,
   };
 }
@@ -217,7 +218,7 @@ function getAge(year) {
   if (year.includes("년")) {
     yearValue = `20${year.slice(0, 2)}`;
   } else {
-    const yearDigits = year.replace(/\D/g, "");
+    const yearDigits = year.replace(/\D/g, "").slice(0, 4);
 
     if (yearDigits.length === 2) {
       yearValue = `20${yearDigits}`;
@@ -354,10 +355,7 @@ async function setExchangeRate() {
 }
 
 async function setImportTax() {
-  const response = await fetch(
-    "http://localhost:3000/v1/taxing/import-tax"
-    // "https://swdev-hardy.com/api/auto-store/v1/taxing/import-tax"
-  );
+  const response = await fetch("https://swdev-hardy.com/api/auto-store/v1/taxing/import-tax");
   const data = await response.json();
 
   localStorage.setItem("importTax", JSON.stringify(data));
