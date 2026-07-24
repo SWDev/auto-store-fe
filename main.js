@@ -1,7 +1,28 @@
 const BASE_URI = "https://swdev-hardy.com/api/auto-store";
 
-createStickyNote();
-fetchAndDisplayPrice();
+const isExtensionEnabled = localStorage.getItem("popupEnabled") !== "false";
+if (isExtensionEnabled) {
+  createStickyNote();
+  fetchAndDisplayPrice();
+}
+
+chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
+  if (request.action === "getCarData") {
+    fetchCarData().then(sendResponse);
+    return true;
+  }
+  if (request.action === "setEnabled") {
+    localStorage.setItem("popupEnabled", request.enabled ? "true" : "false");
+    const stickyNote = document.getElementById("car-calculator-sticky-note");
+
+    if (request.enabled && !stickyNote) {
+      createStickyNote();
+      fetchAndDisplayPrice();
+    } else if (!request.enabled && stickyNote) {
+      stickyNote.remove();
+    }
+  }
+});
 
 chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
   if (request.action === "getCarData") {
@@ -108,17 +129,26 @@ function setStickyNotePrice(priceUSD, priceEUR, priceMDL) {
   const logoSrc = "https://swdev-hardy.com/ui/auto-store-fees/assets/favicon/favicon-32x32.png";
 
   stickyNote.innerHTML = `
-    <img style="width: 20px; height: 20px; object-fit: none;" src="${logoSrc}"/>
+    <div
+      style="
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        flex: 1;
+      "
+    >
+      <img style="width: 20px; height: 20px; object-fit: none;" src="${logoSrc}"/>
 
-    <div style="
-      display: flex;
-      align-items: flex-start;
-      flex-direction: column;
-      line-height: 1;
-    ">
-      <span>$${priceUSD.toLocaleString("en-US", { maximumFractionDigits: 0 })}</span>
-      <sub style="color: black; font-size: 12px">€${priceEUR.toLocaleString("en-US", { maximumFractionDigits: 0 })}</sub>
-      <sub style="color: black; font-size: 12px">L${priceMDL.toLocaleString("en-US", { maximumFractionDigits: 0 })}</sub>
+      <div style="
+        display: flex;
+        align-items: flex-start;
+        flex-direction: column;
+        line-height: 1;
+      ">
+        <span>$ ${priceUSD.toLocaleString("en-US", { maximumFractionDigits: 0 })}</span>
+        <sub style="color: black; font-size: 12px">€ ${priceEUR.toLocaleString("en-US", { maximumFractionDigits: 0 })}</sub>
+        <sub style="color: black; font-size: 12px">L ${priceMDL.toLocaleString("en-US", { maximumFractionDigits: 0 })}</sub>
+      </div>
     </div>
 
     <div

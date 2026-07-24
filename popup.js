@@ -2,40 +2,73 @@ let currentCarData = null;
 
 window.addEventListener("DOMContentLoaded", () => {
   const loader = document.querySelector("#loader");
-  loader.style.display = "block";
+  const popupHeader = document.querySelector("#popup-header");
 
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    chrome.tabs.sendMessage(tabs[0].id, { action: "getCarData" }, (carData) => {
-      if (carData) {
-        currentCarData = carData;
-        displayCarData(carData);
-      }
+  if (popupHeader) {
+    popupHeader.addEventListener("click", togglePopupEnabled);
+  }
+
+  if (!chrome || !chrome.storage) {
+    console.error("Chrome storage API not available");
+    return;
+  }
+
+  chrome.storage.local.get(["popupEnabled"], (result) => {
+    const isEnabled = result.popupEnabled !== false;
+
+    if (!isEnabled) {
+      document.body.style.filter = "grayscale(100%)";
       loader.style.display = "none";
+      return;
+    }
+
+    loader.style.display = "block";
+
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      chrome.tabs.sendMessage(tabs[0].id, { action: "getCarData" }, (carData) => {
+        if (carData) {
+          currentCarData = carData;
+          displayCarData(carData);
+        }
+        loader.style.display = "none";
+      });
     });
   });
 
   document.getElementById("calculateBtn").addEventListener("click", () => {
-    if (currentCarData) {
-      displayCarData(currentCarData);
-    }
+    chrome.storage.local.get(["popupEnabled"], (result) => {
+      const isEnabled = result.popupEnabled !== false;
+      if (isEnabled && currentCarData) {
+        displayCarData(currentCarData);
+      }
+    });
   });
 
   document.getElementById("insuranceCheckbox").addEventListener("change", () => {
-    if (currentCarData) {
-      displayCarData(currentCarData);
-    }
+    chrome.storage.local.get(["popupEnabled"], (result) => {
+      const isEnabled = result.popupEnabled !== false;
+      if (isEnabled && currentCarData) {
+        displayCarData(currentCarData);
+      }
+    });
   });
 
   document.getElementById("shippmentSelect").addEventListener("change", () => {
-    if (currentCarData) {
-      displayCarData(currentCarData);
-    }
+    chrome.storage.local.get(["popupEnabled"], (result) => {
+      const isEnabled = result.popupEnabled !== false;
+      if (isEnabled && currentCarData) {
+        displayCarData(currentCarData);
+      }
+    });
   });
 
   document.getElementById("currencySelect").addEventListener("change", () => {
-    if (currentCarData) {
-      displayCarData(currentCarData);
-    }
+    chrome.storage.local.get(["popupEnabled"], (result) => {
+      const isEnabled = result.popupEnabled !== false;
+      if (isEnabled && currentCarData) {
+        displayCarData(currentCarData);
+      }
+    });
   });
 });
 
@@ -170,4 +203,38 @@ function setTotalPrice(price, mdlExchangeRate, eurExchangeRate, currency) {
   else {
     totalPrice.innerText = `$${roundedPrice.toLocaleString("en-US")}`;
   }
+}
+
+function togglePopupEnabled() {
+  chrome.storage.local.get(["popupEnabled"], (result) => {
+    const isEnabled = result.popupEnabled !== false;
+    const newState = !isEnabled;
+
+    chrome.storage.local.set({ popupEnabled: newState });
+
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      chrome.tabs.sendMessage(tabs[0].id, { action: "setEnabled", enabled: newState });
+    });
+
+    if (newState) {
+      document.body.style.filter = "grayscale(0%)";
+      if (currentCarData) {
+        displayCarData(currentCarData);
+      } else {
+        const loader = document.querySelector("#loader");
+        loader.style.display = "block";
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          chrome.tabs.sendMessage(tabs[0].id, { action: "getCarData" }, (carData) => {
+            if (carData) {
+              currentCarData = carData;
+              displayCarData(carData);
+            }
+            loader.style.display = "none";
+          });
+        });
+      }
+    } else {
+      document.body.style.filter = "grayscale(100%)";
+    }
+  });
 }

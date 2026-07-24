@@ -3,7 +3,7 @@
     "name": "AutoStore",
     "description": "Scraper",
     "version": "1.0",
-    "permissions": ["scripting", "activeTab"],
+    "permissions": ["scripting", "activeTab", "storage"],
     "action": {
       "default_popup": "index.html",
       "default_icon": "assets/auto-store.png",
