@@ -10,7 +10,7 @@ html {
 }
 
 .header {
-  width: 430px;
+  width: 440px;
 }
 
 .header img {
@@ -20,8 +20,28 @@ html {
   display: block;
 }
 
-.input-container {
+.options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 10px 10px 0;
+  width: calc(100% - 20px);
+  background-color: #dedede;
   padding: 10px;
+  font-size: 16px;
+  border-radius: 10px;
+  box-sizing: border-box;
+}
+
+.options label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.input-container {
+  padding: 10px 10px 0;
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
@@ -122,7 +142,7 @@ td {
 
 .price-breakdown > b {
   display: block;
-  margin-top: 20px;
+  margin-top: 10px;
   background: #dedede;
   border-radius: 8px;
   padding: 10px;

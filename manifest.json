@@ -10,12 +10,16 @@
       "default_title": "AutoStore"
     },
     "host_permissions": [
-      "https://fem.encar.com/cars/detail/*"
+      "https://fem.encar.com/cars/detail/*",
+      "https://encar.md/cars/*",
+      "https://encar.ro/cars/*"
     ],
     "content_scripts": [
       {
         "matches": [
-          "https://fem.encar.com/cars/detail/*"
+          "https://fem.encar.com/cars/detail/*",
+          "https://encar.md/cars/*",
+          "https://encar.ro/cars/*"
         ],
         "js": [
           "main.js"

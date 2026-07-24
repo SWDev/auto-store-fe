@@ -1,154 +1,173 @@
-window.addEventListener("DOMContentLoaded", async () => {
-  const loader = document.querySelector("#loader");
-  const KRWInput = document.querySelector("#KRWInput");
-  const EURInput = document.querySelector("#EURInput");
+let currentCarData = null;
 
-  const { exchangeRateEUR, exchangeRateWON } = await setExchangeRate({
-    loader,
-    KRWInput,
-    EURInput,
-  });
+window.addEventListener("DOMContentLoaded", () => {
+  const loader = document.querySelector("#loader");
+  loader.style.display = "block";
 
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    chrome.tabs.sendMessage(tabs[0].id, { action: "popupOpened", exchangeRateWON, exchangeRateEUR }, (response) => {
-      loader.style.display = "block";
-
-      updateExchangeRatesDisplay(response);
+    chrome.tabs.sendMessage(tabs[0].id, { action: "getCarData" }, (carData) => {
+      if (carData) {
+        currentCarData = carData;
+        displayCarData(carData);
+      }
+      loader.style.display = "none";
     });
   });
 
   document.getElementById("calculateBtn").addEventListener("click", () => {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      const exchangeRateWON = KRWInput.value;
-      const exchangeRateEUR = EURInput.value;
+    if (currentCarData) {
+      displayCarData(currentCarData);
+    }
+  });
 
-      localStorage.setItem("exchangeRateWON", exchangeRateWON);
-      localStorage.setItem("exchangeRateEUR", exchangeRateEUR);
+  document.getElementById("insuranceCheckbox").addEventListener("change", () => {
+    if (currentCarData) {
+      displayCarData(currentCarData);
+    }
+  });
 
-      chrome.tabs.sendMessage(tabs[0].id, { action: "getPrice", exchangeRateWON, exchangeRateEUR }, (response) => {
-        updateExchangeRatesDisplay(response);
-      });
-    });
+  document.getElementById("shippmentSelect").addEventListener("change", () => {
+    if (currentCarData) {
+      displayCarData(currentCarData);
+    }
+  });
+
+  document.getElementById("currencySelect").addEventListener("change", () => {
+    if (currentCarData) {
+      displayCarData(currentCarData);
+    }
   });
 });
 
-function updateExchangeRatesDisplay(response) {
-  generatePriceBreakdownTable(response);
-  setTotalPrice(response?.totalPrice);
+function displayCarData(data) {
+  const { exchangeRates, calculation } = data;
+
+  const KRWInput = document.querySelector("#KRWInput");
+  const EURInput = document.querySelector("#EURInput");
+  const MDLInput = document.querySelector("#MDLInput");
+  const insuranceCheckbox = document.querySelector("#insuranceCheckbox");
+  const shippingSelect = document.querySelector("#shippmentSelect");
+  const currencySelect = document.querySelector("#currencySelect");
+
+  KRWInput.value = exchangeRates?.usdToKrw || "N/A";
+  EURInput.value = exchangeRates?.usdToEur || "N/A";
+  MDLInput.value = exchangeRates?.usdToMdl || "N/A";
+
+  const mdlExchangeRate = parseFloat(MDLInput.value) || 1;
+  const eurExchangeRate = parseFloat(EURInput.value) || 1;
+  const selectedCurrency = currencySelect.value;
+  const includeInsurance = insuranceCheckbox.checked;
+  const isFastShipping = shippingSelect.value === "fast";
+
+  let shipmentTax = calculation.shipmentTaxUSD;
+  if (isFastShipping) {
+    shipmentTax += 600;
+  }
+
+  const insuranceAmount = includeInsurance ? calculation.priceUSD * 0.015 : 0;
+
+  const adjustedCalculation = {
+    ...calculation,
+    shipmentTaxUSD: shipmentTax,
+    insurance: insuranceAmount,
+    totalWithInsurance: calculation.totalUSD - calculation.shipmentTaxUSD + shipmentTax + insuranceAmount,
+  };
+
+  generatePriceBreakdownTable(adjustedCalculation, mdlExchangeRate, eurExchangeRate, selectedCurrency);
+  setTotalPrice(adjustedCalculation.totalWithInsurance, mdlExchangeRate, eurExchangeRate, selectedCurrency);
 }
 
-function generatePriceBreakdownTable(response) {
-  const loader = document.querySelector("#loader");
+function generatePriceBreakdownTable(calculation, mdlExchangeRate, eurExchangeRate, currency) {
   const table = document.querySelector("#priceBreakdown");
 
+  if (!calculation) {
+    table.innerHTML = "<tr><td>Error loading car data</td></tr>";
+    return;
+  }
+
+  const formatPrice = (usdPrice) => {
+    const roundedPrice = Math.ceil(usdPrice / 10) * 10;
+
+    if (currency === "MDL") {
+      const mdlPrice = roundedPrice * mdlExchangeRate;
+
+      return `L${mdlPrice.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+    } else if (currency === "EUR") {
+      const eurPrice = roundedPrice * eurExchangeRate;
+
+      return `€${eurPrice.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+    }
+
+    return `$${roundedPrice.toLocaleString("en-US")}`;
+  };
+
   table.innerHTML = `
-        <tr class="darker">
-          <th>Preț cumpărare</th>
-          <td colspan="2" class="accent">${getPriceInEur(response?.acquisitionPrice)}</td>
-        </tr>
+    <tr class="darker">
+      <th>Preț achiziționare</th>
+      <td colspan="2" class="accent">${formatPrice(calculation.priceUSD)}</td>
+    </tr>
 
-        <tr class="lighter">
-          <th rowspan="4">
-            <b class="centered-bold">Devamare</b>
-            <b class="centered-bold accent">
-              ${getPriceInEur(response?.importTaxes?.total)}
-            </b>
-          </th>
-        </tr>
-        <tr class="lighter">
-          <td>Suma accizelor</td>
-          <td colspan="2">${getPriceInEur(+response?.importTaxes?.engineTax)}</td>
-        </tr>
-        <tr class="darker">
-          <td>Proceduri vamale</td>
-          <td colspan="2">${getPriceInEur(+response?.importTaxes?.customsTax)}</td>
-        </tr>
-        <tr class="lighter">
-          <td>Cota de acciz lux</td>
-          <td colspan="2">${getPriceInEur(+response?.importTaxes?.luxuryTax)}</td>
-        </tr>
+    <tr class="lighter">
+      <th rowspan="4">
+        <b class="centered-bold">Cost devamare</b>
+        <b class="centered-bold accent">
+          ${formatPrice(calculation.shipmentTaxUSD + calculation.importTaxUSD + calculation.luxuryTaxUSD)}
+        </b>
+      </th>
+    </tr>
+    <tr class="lighter">
+      <td>Cost livrare</td>
+      <td colspan="2">${formatPrice(calculation.shipmentTaxUSD)}</td>
+    </tr>
+    <tr class="darker">
+      <td>Suma accizelor</td>
+      <td colspan="2">${formatPrice(calculation.importTaxUSD)}</td>
+    </tr>
+    <tr class="lighter">
+      <td>Cota de acciz lux</td>
+      <td colspan="2">${formatPrice(calculation.luxuryTaxUSD)}</td>
+    </tr>
 
-        <tr class="darker">
-          <th rowspan="4" style="border-radius: 0 0 0 6px;" >
-            <b class="centered-bold">Comisioane</b>
-            <b class="centered-bold accent">
-              ${getPriceInEur(response?.ASFee?.total)}
-            </b>
-          </th>
-        </tr>
-        <tr class="darker">
-          <td>Asigurare cargo</td>
-          <td>${getPriceInMDL(response?.ASFee?.cargoInsurance)}</td>
-        </tr>
-        <tr class="lighter">
-          <td>Green Mark</td>
-          <td>${getPriceInMDL(response?.ASFee?.greenMark)}</td>
-        </tr>
-        <tr class="darker">
-          <td>Comision SVG</td>
-          <td>${getPriceInMDL(response?.ASFee?.SVGCommission)}</td>
-        </tr>
-    `;
-
-  loader.style.display = "none";
+    <tr class="darker">
+      <th rowspan="3" style="border-radius: 0 0 0 6px;">
+        <b class="centered-bold">Alte taxe</b>
+        <b class="centered-bold accent">
+          ${formatPrice(calculation.processingFeeUSD + calculation.insurance)}
+        </b>
+      </th>
+    </tr>
+    <tr class="darker">
+      <td>Taxa pentru proceduri vamale</td>
+      <td>${formatPrice(calculation.processingFeeUSD)}</td>
+    </tr>
+    <tr class="lighter">
+      <td>Asiguare</td>
+      <td>${formatPrice(calculation.insurance)}</td>
+    </tr>
+  `;
 }
 
-function setTotalPrice(price) {
+function setTotalPrice(price, mdlExchangeRate, eurExchangeRate, currency) {
   const totalPrice = document.querySelector("#totalPrice");
 
-  totalPrice.innerText = getPriceInEur(+price);
-}
-
-function getPriceInEur(price) {
-  if (price === undefined || price === null || isNaN(price)) {
-    return "🤷‍♀️";
+  if (!price) {
+    totalPrice.innerText = "N/A";
+    return;
   }
 
-  const eur = price / localStorage.getItem("exchangeRateEUR");
+  const roundedPrice = Math.ceil(price / 10) * 10;
 
-  return `${eur.toLocaleString("de-DE", { maximumFractionDigits: 0 })}€`;
-}
+  if (currency === "MDL") {
+    const mdlPrice = roundedPrice * mdlExchangeRate;
 
-function getPriceInMDL(price) {
-  if (price === undefined || price === null) {
-    return "🤷‍♀️";
+    totalPrice.innerText = `L${mdlPrice.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
   }
+  else if (currency === "EUR") {
+    const eurPrice = roundedPrice * eurExchangeRate;
 
-  return `${price.toLocaleString("de-DE", { maximumFractionDigits: 0 })} MDL`;
-}
-
-async function setExchangeRate({ loader, KRWInput, EURInput }) {
-  const exchangeRateDate = localStorage.getItem("exchangeRateDate");
-
-  if (!exchangeRateDate || isExpiredExchangeRate(new Date(exchangeRateDate))) {
-    loader.style.display = "block";
-
-    const exchangeResponse = await fetch("https://swdev-hardy.com/api/auto-store/v1/exchange");
-    const exchangeData = await exchangeResponse.json();
-    const eurToMDL = 1 / exchangeData.EUR;
-
-    localStorage.setItem("exchangeRateDate", new Date().toISOString());
-    localStorage.setItem("exchangeRateWON", exchangeData.KRW.toFixed(4) || 83);
-    localStorage.setItem("exchangeRateEUR", eurToMDL.toFixed(4) || 19);
-
-    loader.style.display = "none";
+    totalPrice.innerText = `€${eurPrice.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
   }
-
-  const exchangeRateWON = localStorage.getItem("exchangeRateWON");
-  const exchangeRateEUR = localStorage.getItem("exchangeRateEUR");
-
-  KRWInput.value = exchangeRateWON;
-  EURInput.value = exchangeRateEUR;
-
-  return { exchangeRateWON, exchangeRateEUR };
-}
-
-function isExpiredExchangeRate(dateToCheck) {
-  const today = new Date();
-  const exchangeRateUpdateTime = new Date(today);
-
-  exchangeRateUpdateTime.setDate(today.getDate());
-  exchangeRateUpdateTime.setHours(0, 0, 0, 0);
-
-  return dateToCheck.getTime() < exchangeRateUpdateTime.getTime();
+  else {
+    totalPrice.innerText = `$${roundedPrice.toLocaleString("en-US")}`;
+  }
 }

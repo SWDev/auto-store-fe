@@ -1,257 +1,60 @@
-var asFeesIndices = {
-  cargoInsurance: 0,
-  greenMark: 1,
-};
-
-const metrics = [
-  { en: "year", kr: "연식" },
-  { en: "displacement", kr: "배기량" },
-  { en: "fuel", kr: "연료" },
-  { en: "models", kr: "차종" },
-  { en: "mileage", kr: "주행거리" },
-];
+const BASE_URI = "https://swdev-hardy.com/api/auto-store";
 
 createStickyNote();
-calculateOnLoad();
+fetchAndDisplayPrice();
 
 chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
-  if (request.action === "popupOpened" || request.action === "getPrice") {
-    updateExchangeRatesDisplay(request);
-    setStickyNoteLoader();
-
-    const intervalId = setInterval(() => {
-      document.querySelector(".rwLLFeYcq5")?.click();
-
-      if (document.querySelector("button[class*='BottomSheet-module_close_btn__']")) {
-        clearInterval(intervalId);
-
-        const calculated = calculatePriceWithFees(request.exchangeRateWON);
-
-        sendResponse(calculated);
-      }
-    }, 300);
-
-    setTimeout(() => {
-      clearInterval(intervalId);
-    }, 20000);
-
+  if (request.action === "getCarData") {
+    fetchCarData().then(sendResponse);
     return true;
   }
 });
 
-async function calculateOnLoad() {
-  await setImportTax();
-  await setASFees();
-  await setExchangeRate();
-
-  const intervalId = setInterval(() => {
-    document.querySelector(".rwLLFeYcq5")?.click();
-
-    if (document.querySelector("button[class*='BottomSheet-module_close_btn__']")) {
-      clearInterval(intervalId);
-      calculatePriceWithFees(localStorage.getItem("exchangeRateWON"));
-      document.querySelector("button[class*='BottomSheet-module_close_btn__']").click();
-    }
-  }, 200);
-
-  setTimeout(() => {
-    clearInterval(intervalId);
-  }, 20000);
+function extractCarIdFromUrl() {
+  const pathname = window.location.pathname;
+  // Match both /detail/{id} and /{id} patterns
+  const match = pathname.match(/\/(?:detail\/)?(\d+)(?:\/|$)/);
+  return match ? match[1] : null;
 }
 
-function calculatePriceWithFees(exchangeRateWON) {
-  let wonPrice = document.querySelector(".z7tWTEs7N0")?.innerText || "0";
-
-  if (wonPrice.includes(",")) {
-    wonPrice = +wonPrice.replace(/,/g, "") / 100;
+async function fetchCarData() {
+  const carId = extractCarIdFromUrl();
+  if (!carId) {
+    console.error("Could not extract car ID from URL");
+    return null;
   }
 
-  const purchasedPriceInMDL = (+wonPrice * 1_000_000) / exchangeRateWON;
-  const params = Array.from(document.querySelectorAll("#bottom_sheet li"));
-  const aggregatedPrice = calculate({ params, purchasedPriceInMDL });
-
-  return aggregatedPrice;
-}
-
-function calculate(options) {
-  const { params, purchasedPriceInMDL } = options;
-  const dataParams = params.map((param) => param.innerText.toLowerCase().split("\n"));
-  const carData = metrics
-    .map((metric) => {
-      const pairs = dataParams.find((pair) => pair[0].includes(metric.en) || pair[0].includes(metric.kr));
-
-      if (!pairs) return null;
-
-      return {
-        [metric.en]: pairs[1],
-      };
-    })
-    .reduce((acc, line) => {
-      return {
-        ...acc,
-        ...line,
-      };
-    }, {});
-
-  const { importTaxes, ASFee } = calculateTaxes(carData, purchasedPriceInMDL);
-  const response = {
-    acquisitionPrice: purchasedPriceInMDL,
-    importTaxes: importTaxes,
-    ASFee,
-    totalPrice: +purchasedPriceInMDL + +importTaxes.total + ASFee.total,
-  };
-
-  setStickyNoteLogoAndPrice(response.totalPrice);
-
-  return response;
-}
-
-function findLowest(object, number) {
-  if (!object || typeof object !== "object") {
-    return 0;
+  try {
+    const response = await fetch(`${BASE_URI}/v1/auto-api/cars/${carId}/import-calculation`);
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Failed to fetch car data:", error);
+    return null;
   }
+}
 
-  const keys = Object.keys(object);
+async function fetchAndDisplayPrice() {
+  setStickyNoteLoader();
+  const data = await fetchCarData();
 
-  for (let i = keys.length - 1; i >= 0; i--) {
-    if (keys[i] <= number) {
-      return object[keys[i]];
-    }
+  if (data?.calculation?.totalUSD) {
+    setStickyNotePrice(
+      data.calculation.totalUSD,
+      data.calculation.totalUSD * data.exchangeRates.usdToEur,
+      data.calculation.totalUSD * data.exchangeRates.usdToMdl
+    );
   }
-
-  return object[keys[0]];
-}
-
-function calculateTaxes(data, purchasedPriceInMDL) {
-  const bodyType = getBodyType(data.type);
-  const ASFee = calculateASFees(purchasedPriceInMDL, bodyType);
-  const importTaxes = calculateImportTaxes(data, purchasedPriceInMDL);
-
-  return {
-    importTaxes,
-    ASFee,
-  };
-}
-
-function calculateImportTaxes(data, purchasedPriceInMDL) {
-  const taxTable = JSON.parse(localStorage.getItem("importTax"));
-  const carAge = getAge(data.year);
-  const fuel = getFuel(data.fuel);
-  const displacement = getDisplacement(data.displacement);
-  const yearTax = taxTable[fuel]?.age[carAge - 1];
-  const engineTax = findLowest(yearTax?.displacement, displacement) * displacement;
-  const luxuryTax = calculateLuxuryTax(purchasedPriceInMDL, taxTable);
-  const customsTax = purchasedPriceInMDL / 20 > 1000 ? 1000 : 400;
-
-  return {
-    total: engineTax + luxuryTax + customsTax,
-    customsTax,
-    engineTax,
-    luxuryTax,
-  };
-}
-
-function calculateLuxuryTax(price, taxTable) {
-  const luxuryTax = price >= 600_000 ? (findLowest(taxTable.luxury, price) / 100) * price : 0;
-
-  return luxuryTax;
-}
-
-function calculateASFees(mdlPrice, bodyType) {
-  const fees = JSON.parse(localStorage.getItem("asFees"));
-  const eurPrice = mdlPrice / (localStorage.getItem("exchangeRateEUR") || 19);
-  const cargoInsurance = getFeeFromColumn(fees[asFeesIndices.cargoInsurance].columns, bodyType);
-  // const greenMark = getFeeFromColumn(fees[asFeesIndices.greenMark].columns, bodyType);
-
-  let SVGCommission = 0;
-
-  for (let index = 2; index < fees.length; index++) {
-    const fee = fees[index];
-    const ceiling = +fee.id.replace(/svg_/, "").split("_")[1].replace(/k/, "000");
-
-    if (eurPrice <= ceiling) {
-      SVGCommission = getFeeFromColumn(fee.columns, bodyType);
-
-      return returnAggregatedASFees({
-        cargoInsurance,
-        SVGCommission,
-        mdlPrice,
-      });
-    }
-  }
-
-  return returnAggregatedASFees({
-    cargoInsurance,
-    SVGCommission,
-    mdlPrice,
-  });
-}
-
-function returnAggregatedASFees({ cargoInsurance, SVGCommission, mdlPrice }) {
-  const insurance = +mdlPrice * (+cargoInsurance / 100);
-
-  return {
-    total: insurance + SVGCommission,
-    cargoInsurance: insurance,
-    SVGCommission,
-  };
-}
-
-function getFeeFromColumn(columns, bodyType) {
-  return columns[Object.keys(columns).find((one) => one.toLowerCase()?.includes(bodyType))];
-}
-
-function getBodyType(type) {
-  if (type === "suv") return "suv";
-  if (type?.includes("rv") || type?.includes("차")) return "minivan";
-
-  return "sedan";
-}
-
-function getFuel(fuel) {
-  return getFuelType(fuel);
-}
-
-function getAge(year) {
-  let yearValue = new Date().getFullYear();
-
-  if (year.includes("년")) {
-    yearValue = `20${year.slice(0, 2)}`;
-  } else {
-    const yearDigits = year.replace(/\D/g, "").slice(0, 4);
-
-    if (yearDigits.length === 2) {
-      yearValue = `20${yearDigits}`;
-    } else {
-      yearValue = yearDigits;
-    }
-  }
-
-  return new Date().getFullYear() - yearValue;
-}
-
-function getDisplacement(displacement) {
-  return parseInt(displacement.replace(/\D/g, ""));
-}
-
-function getFuelType(fuel) {
-  if (fuel.includes("electric") || fuel.includes("전기")) return "electric";
-  if (fuel.includes("hybrid") || fuel.includes("하이브리드")) return "hybrid";
-  if (fuel.includes("gasoline + electric") || fuel.includes("가솔린+전기")) return "hybrid";
-  if (fuel.includes("diesel + electric") || fuel.includes("디젤 + 전기")) return "hybrid";
-  if (fuel.includes("diesel") || fuel.includes("디젤")) return "diesel";
-  if (fuel.includes("petrol") || fuel.includes("휘발유")) return "petrol";
-  if (fuel.includes("gasoline") || fuel.includes("가솔린")) return "petrol";
 }
 
 function createStickyNote() {
   const stickyNote = document.getElementById("car-calculator-sticky-note");
 
   if (!stickyNote) {
-    const stickyNote = document.createElement("div");
+    const note = document.createElement("div");
 
-    stickyNote.id = "car-calculator-sticky-note";
-    stickyNote.style.cssText = `
+    note.id = "car-calculator-sticky-note";
+    note.style.cssText = `
       position: fixed;
       top: 110px;
       left: 5px;
@@ -266,19 +69,19 @@ function createStickyNote() {
       font-family: sans-serif;
       box-shadow: rgba(0, 0, 0, 0.2) 0px 4px 8px;
       z-index: 10000;
-      width: 125px;
+      width: 140px;
+      height: 60px;
+      padding-top: 2px;
       transition: transform 0.3s ease-in-out;
       transform: translateY(-50%);
       display: flex;
       align-items: center;
       justify-content: space-evenly;
       line-height: 1;
-      height: 38px;
       font-family: 'Pretendard', sans-serif;
     `;
 
-    document.body.appendChild(stickyNote);
-
+    document.body.appendChild(note);
     setStickyNoteLoader();
   }
 }
@@ -295,7 +98,7 @@ function setStickyNoteLoader() {
   stickyNote.innerHTML = `<img style="width: 25px; height: 25px; object-fit: contain;" src="${loaderSrc}"/>`;
 }
 
-function setStickyNoteLogoAndPrice(price) {
+function setStickyNotePrice(priceUSD, priceEUR, priceMDL) {
   const stickyNote = document.getElementById("car-calculator-sticky-note");
 
   if (!stickyNote) {
@@ -304,70 +107,81 @@ function setStickyNoteLogoAndPrice(price) {
 
   const logoSrc = "https://swdev-hardy.com/ui/auto-store-fees/assets/favicon/favicon-32x32.png";
 
-  const priceInEUR = (price / localStorage.getItem("exchangeRateEUR")).toFixed();
-
   stickyNote.innerHTML = `
-      <img style="width: 20px; height: 20px; object-fit: none;" src="${logoSrc}"/>
-      <span>${priceInEUR.toLocaleString("de-DE", { maximumFractionDigits: 0 })}€</span>
+    <img style="width: 20px; height: 20px; object-fit: none;" src="${logoSrc}"/>
+
+    <div style="
+      display: flex;
+      align-items: flex-start;
+      flex-direction: column;
+      line-height: 1;
+    ">
+      <span>$${priceUSD.toLocaleString("en-US", { maximumFractionDigits: 0 })}</span>
+      <sub style="color: black; font-size: 12px">€${priceEUR.toLocaleString("en-US", { maximumFractionDigits: 0 })}</sub>
+      <sub style="color: black; font-size: 12px">L${priceMDL.toLocaleString("en-US", { maximumFractionDigits: 0 })}</sub>
+    </div>
+
+    <div
+      id="toggle-sticky-btn"
+      style="
+        cursor: pointer;
+        position: absolute;
+        right: 0;
+        top: 50%;
+        transform: translate(50%, -50%);
+        background: white;
+        border: 2px solid rgb(255, 80, 0);
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        font-style: normal;
+        text-align: center;
+        font-size: 12px;
+        line-height: 20px;
+      "
+    >
+      <div
+        style="
+          display: block;
+          position: absolute;
+          left: 0;
+          top: 50%;
+          background: white;
+          height: 30px;
+          width: 15px;
+          transform: translate(-5px, -50%);
+        ">
+      </div>
+      <span id="toggle-arrow" style="position: relative; display: inline-block; transition: transform 0.3s ease;">
+        &#9665
+      </span>
+    </div>
     `;
-}
 
-function isExpiredExchangeRate(dateToCheck) {
-  const today = new Date();
-  const exchangeRateUpdateTime = new Date(today);
-
-  exchangeRateUpdateTime.setDate(today.getDate());
-  exchangeRateUpdateTime.setHours(0, 0, 0, 0);
-
-  return dateToCheck.getTime() < exchangeRateUpdateTime.getTime();
-}
-
-function updateExchangeRatesDisplay(request) {
-  const { exchangeRateWON, exchangeRateEUR } = request;
-  const storedWON = localStorage.getItem("exchangeRateWON");
-  const storedEUR = localStorage.getItem("exchangeRateEUR");
-
-  if (storedWON !== exchangeRateWON && exchangeRateWON) {
-    localStorage.setItem("exchangeRateWON", exchangeRateWON);
+    const toggleBtn = stickyNote.querySelector("#toggle-sticky-btn");
+    if (toggleBtn) {
+      toggleBtn.addEventListener("click", toggleSticker);
+    }
   }
 
-  if (storedEUR !== exchangeRateEUR && exchangeRateEUR) {
-    localStorage.setItem("exchangeRateEUR", exchangeRateEUR);
+function toggleSticker() {
+  const stickyNote = document.getElementById("car-calculator-sticky-note");
+  if (!stickyNote) {
+    return;
+  }
+
+  const arrow = stickyNote.querySelector("#toggle-arrow");
+  const isHidden = stickyNote.dataset.hidden === "true";
+
+  if (isHidden) {
+    stickyNote.style.transform = "translateY(-50%) translateX(0)";
+    stickyNote.dataset.hidden = "false";
+    if (arrow) arrow.style.transform = "rotate(0deg)";
+  } else {
+    stickyNote.style.transform = "translateY(-50%) translateX(-95%)";
+    stickyNote.dataset.hidden = "true";
+    if (arrow) arrow.style.transform = "rotate(180deg)";
   }
 }
 
-async function setExchangeRate() {
-  const exchangeRateDate = localStorage.getItem("exchangeRateDate");
-
-  if (!exchangeRateDate || isExpiredExchangeRate(new Date(exchangeRateDate))) {
-    const exchangeResponse = await fetch("https://swdev-hardy.com/api/auto-store/v1/exchange");
-    const exchangeData = await exchangeResponse.json();
-    const eurToMDL = 1 / exchangeData.EUR;
-
-    localStorage.setItem("exchangeRateDate", new Date().toISOString());
-    localStorage.setItem("exchangeRateWON", exchangeData.KRW.toFixed(4) || 83);
-    localStorage.setItem("exchangeRateEUR", eurToMDL.toFixed(4) || 19);
-  }
-
-  const exchangeRateWON = localStorage.getItem("exchangeRateWON");
-
-  return exchangeRateWON;
-}
-
-async function setImportTax() {
-  const response = await fetch("https://swdev-hardy.com/api/auto-store/v1/taxing/import-tax");
-  const data = await response.json();
-
-  localStorage.setItem("importTax", JSON.stringify(data));
-
-  return data;
-}
-
-async function setASFees() {
-  const response = await fetch("https://swdev-hardy.com/api/auto-store/v1/taxing");
-  const data = await response.json();
-
-  localStorage.setItem("asFees", JSON.stringify(data));
-
-  return data;
-}
+window.toggleSticker = toggleSticker;

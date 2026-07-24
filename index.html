@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -13,14 +13,42 @@
 
     <table class="exchange-table">
       <tr>
-        <th>KRW</th>
-        <th>EUR</th>
+        <th>USD/KRW</th>
+        <th>USD/EUR</th>
+        <th>USD/MDL</th>
       </tr>
       <tr>
         <td align="center"><input type="number" id="KRWInput" /></td>
         <td align="center"><input type="number" id="EURInput" /></td>
+        <td align="center"><input type="number" id="MDLInput" /></td>
       </tr>
     </table>
+
+    <div class="options">
+      <label>
+        Asigurare (1.5%)
+        <input type="checkbox" id="insuranceCheckbox" />
+      </label>
+
+      <label>
+        Livrare
+
+        <select id="shippmentSelect" style="padding: 5px">
+          <option selected value="standard">Standard</option>
+          <option value="fast">Rapidă</option>
+        </select>
+      </label>
+
+      <label>
+        Valuta
+
+        <select id="currencySelect" style="padding: 5px">
+          <option value="USD">USD</option>
+          <option value="EUR">EUR</option>
+          <option value="MDL">MDL</option>
+        </select>
+      </label>
+    </div>
 
     <div class="input-container">
       <button id="calculateBtn">Calculează</button>
